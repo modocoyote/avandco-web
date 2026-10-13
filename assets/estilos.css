@@ -147,3 +147,9 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--acento); ou
 
 .acciones { display: flex; justify-content: space-between; gap: .75rem; flex-wrap: wrap; margin-top: 2rem; }
 .guardado { font-size: .85rem; color: var(--tinta-suave); }
+
+/* Campos que aparecen al elegir «Otro», ubicación y las tres preguntas */
+.sub-campo { margin-top: .6rem; }
+.fila-doble { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .5rem; }
+.tres { display: grid; gap: .5rem; }
+select:disabled { opacity: .6; }
