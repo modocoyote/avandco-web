@@ -931,7 +931,9 @@
 
   function enviar() {
     var btn = $('btn-siguiente');
+    var textoBtn = btn.textContent;
     btn.disabled = true;
+    btn.textContent = 'Enviando…';
     mensaje('msg-bloque', 'Enviando tus respuestas…', 'info');
     llamar('/enviar', {
       codigo: estado.codigo,
@@ -939,10 +941,10 @@
       respuestas: componer()
     }).then(function (r) {
       if (r.ok) { borrarBorrador(); mostrar('pantalla-gracias'); return; }
-      btn.disabled = false;
+      btn.disabled = false; btn.textContent = textoBtn;
       mensaje('msg-bloque', MOTIVOS[r.motivo] || MOTIVOS.servidor);
     }).catch(function () {
-      btn.disabled = false;
+      btn.disabled = false; btn.textContent = textoBtn;
       mensaje('msg-bloque', MOTIVOS.servidor);
     });
   }
