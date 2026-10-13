@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Formulario CCA · AV&amp;CO</title>
+  <link rel="stylesheet" href="/assets/estilos.css">
+</head>
+<body>
+
+<header class="encabezado">
+  <div class="envoltura">
+    <a class="marca" href="/">AV<span>&amp;</span>CO</a>
+    <nav class="nav" aria-label="Principal">
+      <a href="/privacidad/">Aviso de privacidad</a>
+    </nav>
+  </div>
+</header>
+
+<main class="seccion">
+  <div class="envoltura" style="max-width: 46rem">
+
+    <!-- Paso 0: código -->
+    <section id="pantalla-codigo" class="tarjeta">
+      <p class="etiqueta">Formulario CCA</p>
+      <h1 style="font-size: clamp(1.8rem, 4vw, 2.4rem)">Escribe tu código</h1>
+      <p>Te lo enviamos por WhatsApp o correo. Cada código es personal y se usa una sola vez.</p>
+      <div id="msg-codigo"></div>
+      <form id="form-codigo" novalidate>
+        <div class="campo">
+          <label for="codigo">Código</label>
+          <input id="codigo" class="codigo-input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="AVCO-XXXX-XXXX" maxlength="20" required>
+        </div>
+        <button class="boton" type="submit" id="btn-codigo">Continuar</button>
+      </form>
+    </section>
+
+    <!-- Paso 1: aviso de privacidad -->
+    <section id="pantalla-aviso" hidden>
+      <div class="tarjeta">
+        <p class="etiqueta" id="saludo">Antes de empezar</p>
+        <h1 style="font-size: clamp(1.8rem, 4vw, 2.4rem)">Aviso de privacidad</h1>
+        <p>Léelo aquí mismo o baja hasta el final para aceptarlo y empezar tu formulario.</p>
+        <div class="aviso-caja" id="aviso-contenido">
+          <p>Cargando el aviso…</p>
+        </div>
+        <label class="aceptar" for="acepto">
+          <input type="checkbox" id="acepto">
+          <span>He leído el aviso de privacidad y acepto el tratamiento de mis datos para las finalidades necesarias.</span>
+        </label>
+        <div class="acciones">
+          <span></span>
+          <button class="boton" type="button" id="btn-aviso" disabled>Empezar el formulario</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pasos 2 a 7: bloques de preguntas -->
+    <section id="pantalla-preguntas" hidden>
+      <div class="tarjeta">
+        <div class="avance" id="avance"></div>
+        <p class="avance-texto" id="avance-texto"></p>
+        <p class="etiqueta" id="bloque-etiqueta"></p>
+        <h2 id="bloque-titulo"></h2>
+        <div id="msg-bloque"></div>
+        <form id="form-bloque" novalidate></form>
+        <div class="acciones">
+          <button class="boton secundario" type="button" id="btn-atras">Atrás</button>
+          <span class="guardado" id="guardado"></span>
+          <button class="boton" type="button" id="btn-siguiente">Siguiente</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final -->
+    <section id="pantalla-gracias" class="tarjeta" hidden>
+      <p class="etiqueta">Listo</p>
+      <h1 style="font-size: clamp(1.8rem, 4vw, 2.4rem)">Gracias, recibimos tus respuestas</h1>
+      <p>Ya empezamos a trabajar en tu CCA. Te escribiremos para agendar tu consulta.</p>
+      <p>Si quieres corregir algo, escríbenos por WhatsApp al <a href="https://wa.me/526674111515" rel="noopener">667 411 1515</a>.</p>
+    </section>
+
+  </div>
+</main>
+
+<footer class="pie">
+  <div class="envoltura">
+    <span>© 2026 AV&amp;CO</span>
+    <span><a href="/privacidad/">Aviso de privacidad</a></span>
+  </div>
+</footer>
+
+<script src="/assets/formulario.js"></script>
+</body>
+</html>

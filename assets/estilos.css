@@ -1,0 +1,149 @@
+/* AV&CO · estilos del sitio. Sin fuentes ni servicios externos. */
+:root {
+  --tinta: #16202b;
+  --tinta-suave: #4a5866;
+  --papel: #f6f3ee;
+  --superficie: #ffffff;
+  --linea: #ddd6cb;
+  --acento: #9a6b2f;
+  --acento-fondo: #f1e7d8;
+  --error: #a3352b;
+  --ok: #2f6b4a;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --ancho: 68rem;
+  --texto: 40rem;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tinta: #ece7df;
+    --tinta-suave: #a9b2bb;
+    --papel: #12181f;
+    --superficie: #1a222b;
+    --linea: #2e3944;
+    --acento: #d2a468;
+    --acento-fondo: #2a2219;
+    --error: #e58a80;
+    --ok: #7cc39b;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--papel);
+  color: var(--tinta);
+  font: 1.0625rem/1.65 var(--sans);
+}
+img { max-width: 100%; }
+a { color: var(--acento); }
+a:hover { text-decoration-thickness: 2px; }
+[hidden] { display: none !important; }
+
+.envoltura { max-width: var(--ancho); margin: 0 auto; padding-inline: 1.25rem; }
+.legible { max-width: var(--texto); }
+
+/* Encabezado */
+.encabezado { border-bottom: 1px solid var(--linea); }
+.encabezado .envoltura {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; padding-block: 1.1rem;
+}
+.marca {
+  font-family: var(--serif); font-size: 1.5rem; letter-spacing: .02em;
+  color: var(--tinta); text-decoration: none;
+}
+.marca span { color: var(--acento); }
+.nav { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: .95rem; }
+.nav a { color: var(--tinta-suave); text-decoration: none; }
+.nav a:hover { color: var(--tinta); }
+
+/* Tipografía */
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.2; text-wrap: balance; }
+h1 { font-size: clamp(2.1rem, 5vw, 3.3rem); margin: 0 0 1rem; }
+h2 { font-size: clamp(1.5rem, 3vw, 2rem); margin: 0 0 .75rem; }
+h3 { font-size: 1.2rem; margin: 0 0 .4rem; }
+p { margin: 0 0 1rem; }
+.etiqueta {
+  font-size: .78rem; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--acento); font-weight: 600; margin-bottom: .75rem;
+}
+.entrada { font-size: 1.2rem; color: var(--tinta-suave); }
+
+/* Secciones */
+.seccion { padding-block: clamp(3rem, 8vw, 5.5rem); }
+.seccion + .seccion { border-top: 1px solid var(--linea); }
+.portada { padding-block: clamp(3.5rem, 10vw, 7rem); }
+
+.botones { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 1.75rem; }
+.boton {
+  display: inline-block; border: 1px solid var(--tinta); border-radius: .4rem;
+  padding: .8rem 1.3rem; font: 600 1rem/1 var(--sans);
+  color: var(--papel); background: var(--tinta); text-decoration: none; cursor: pointer;
+}
+.boton:hover { opacity: .9; }
+.boton.secundario { background: transparent; color: var(--tinta); }
+.boton:disabled { opacity: .45; cursor: not-allowed; }
+
+.pasos { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 2rem; margin-top: 2rem; }
+.paso { border-top: 2px solid var(--acento); padding-top: 1rem; min-width: 0; }
+.paso .num { font-family: var(--serif); color: var(--acento); font-size: 1.1rem; }
+.paso p { color: var(--tinta-suave); margin: 0; }
+
+.lista-cca { columns: 2 16rem; column-gap: 2.5rem; padding-left: 1.2rem; margin: 1.5rem 0 0; }
+.lista-cca li { break-inside: avoid; margin-bottom: .6rem; }
+
+.cita { font-family: var(--serif); font-size: 1.3rem; line-height: 1.5; margin: 0 0 1.5rem; }
+.cita small { display: block; font-family: var(--sans); font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; color: var(--tinta-suave); margin-bottom: .35rem; }
+
+/* Pie */
+.pie { border-top: 1px solid var(--linea); padding-block: 2.5rem; font-size: .92rem; color: var(--tinta-suave); }
+.pie .envoltura { display: flex; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
+.pie a { color: var(--tinta-suave); }
+
+/* Aviso de privacidad */
+.documento h2 { font-size: 1.35rem; margin-top: 2.2rem; }
+.documento ul { padding-left: 1.2rem; }
+.documento li { margin-bottom: .4rem; }
+.fecha-doc { color: var(--tinta-suave); font-size: .95rem; }
+
+/* Formulario */
+.tarjeta {
+  background: var(--superficie); border: 1px solid var(--linea); border-radius: .6rem;
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+}
+.avance { display: flex; gap: .4rem; margin-bottom: 1.5rem; }
+.avance span { flex: 1; height: 4px; border-radius: 2px; background: var(--linea); }
+.avance span.hecho { background: var(--acento); }
+.avance-texto { font-size: .85rem; color: var(--tinta-suave); margin: -1rem 0 1.5rem; }
+
+.campo { margin-bottom: 1.6rem; }
+.campo label, .campo legend { display: block; font-weight: 600; margin-bottom: .45rem; }
+.campo .num-p { color: var(--acento); font-variant-numeric: tabular-nums; margin-right: .35rem; }
+.campo .ayuda { display: block; font-weight: 400; font-size: .88rem; color: var(--tinta-suave); margin-top: .15rem; }
+.campo fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+input[type=text], input[type=tel], input[type=email], input[type=number], textarea, select {
+  width: 100%; font: inherit; color: var(--tinta); background: var(--papel);
+  border: 1px solid var(--linea); border-radius: .4rem; padding: .7rem .8rem;
+}
+textarea { min-height: 6.5rem; resize: vertical; }
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--acento); outline-offset: 1px; border-color: transparent; }
+.opciones { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .5rem; }
+.opcion { display: flex; gap: .5rem; align-items: center; font-weight: 400 !important; margin: 0 !important; padding: .55rem .7rem; border: 1px solid var(--linea); border-radius: .4rem; cursor: pointer; }
+.opcion input { accent-color: var(--acento); width: 1.05rem; height: 1.05rem; }
+.codigo-input { font-family: ui-monospace, SFMono-Regular, Menlo, monospace !important; letter-spacing: .12em; text-transform: uppercase; font-size: 1.15rem !important; }
+
+.aviso-caja { border: 1px solid var(--linea); border-radius: .5rem; background: var(--papel); padding: 1.25rem clamp(1rem, 3vw, 1.75rem); }
+.aceptar { display: flex; gap: .7rem; align-items: flex-start; margin-top: 1.5rem; padding: 1rem; background: var(--acento-fondo); border-radius: .5rem; font-weight: 600; cursor: pointer; }
+.aceptar input { accent-color: var(--acento); width: 1.2rem; height: 1.2rem; margin-top: .2rem; flex: none; }
+
+.mensaje { padding: .8rem 1rem; border-radius: .4rem; margin-bottom: 1rem; font-size: .95rem; }
+.mensaje.error { background: color-mix(in srgb, var(--error) 12%, transparent); color: var(--error); }
+.mensaje.info { background: var(--acento-fondo); }
+.campo.invalido input, .campo.invalido textarea, .campo.invalido select, .campo.invalido .opciones { outline: 2px solid var(--error); outline-offset: 1px; }
+
+.acciones { display: flex; justify-content: space-between; gap: .75rem; flex-wrap: wrap; margin-top: 2rem; }
+.guardado { font-size: .85rem; color: var(--tinta-suave); }
