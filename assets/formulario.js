@@ -609,6 +609,12 @@
     usado: 'Este código ya se usó. Si necesitas corregir algo, escríbenos por WhatsApp al 667 411 1515.',
     demasiados_intentos: 'Hubo demasiados intentos. Espera unos minutos y vuelve a intentarlo.',
     incompleto: 'Faltan respuestas. Revisa los bloques del formulario.',
+    ocupado: 'Ese horario se acaba de ocupar. Elige otro, por favor.',
+    correo: 'Revisa el correo: ahí te llega la invitación con el enlace de la videollamada.',
+    muy_tarde: 'Faltan menos de 24 horas para tu sesión, ya no se puede mover en línea. Escríbenos por WhatsApp al 667 411 1515.',
+    ya_agendada: 'Tu sesión de entrega ya estaba agendada.',
+    no_disponible: 'Las sesiones de implementación se agendan después de tu sesión de entrega.',
+    sin_cita: 'Primero agenda tu sesión de entrega; con eso se desbloquea tu guía.',
     servidor: 'No pudimos conectar. Revisa tu internet e inténtalo otra vez; tu avance está guardado.'
   };
 
@@ -623,6 +629,7 @@
       $('btn-codigo').disabled = false;
       if (!r.ok) { mensaje('msg-codigo', MOTIVOS[r.motivo] || MOTIVOS.servidor); return; }
       estado.codigo = codigo;
+      if (r.enviado) { mensaje('msg-codigo', ''); borrarBorrador(); abrirGracias(r, true); return; }
       estado.negocio = r.negocio || '';
       var b = leerBorrador();
       if (b) {
@@ -949,7 +956,15 @@
       aviso: { version: estado.avisoVersion, aceptado_en: estado.avisoAceptadoEn },
       respuestas: componer()
     }).then(function (r) {
-      if (r.ok) { borrarBorrador(); mostrar('pantalla-gracias'); return; }
+      if (r.ok) { borrarBorrador(); abrirGracias(r, false); return; }
+      if (r.motivo === 'usado') {
+        // Ya se había enviado (por ejemplo, desde otro dispositivo): pasa directo a la pantalla de gracias.
+        return llamar('/verificar', { codigo: estado.codigo }).then(function (v) {
+          if (v.ok && v.enviado) { borrarBorrador(); abrirGracias(v, true); return; }
+          btn.disabled = false; btn.textContent = textoBtn;
+          mensaje('msg-bloque', MOTIVOS.usado);
+        });
+      }
       btn.disabled = false; btn.textContent = textoBtn;
       mensaje('msg-bloque', MOTIVOS[r.motivo] || MOTIVOS.servidor);
     }).catch(function () {
@@ -957,6 +972,240 @@
       mensaje('msg-bloque', MOTIVOS.servidor);
     });
   }
+
+  // ---------- pantalla de gracias: paso 2 (agenda) y paso 3 (guía) ----------
+  // Todo sale del Worker; con el código el cliente puede volver cuando quiera a agendar, mover o descargar.
+  var agenda = { info: null, elegirPara: null };
+  var CANDADO = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+  var PALOMITA = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+  function abrirGracias(info, deVuelta) {
+    agenda.info = info;
+    agenda.elegirPara = null;
+    if (deVuelta) {
+      $('gracias-titulo').textContent = info.negocio ? 'Hola de nuevo, ' + info.negocio : 'Hola de nuevo';
+      $('gracias-texto').textContent = 'Ya tenemos tus respuestas. Desde aquí agendas o mueves tu sesión y descargas tu guía.';
+    }
+    pintarGracias();
+    mostrar('pantalla-gracias');
+  }
+
+  function pintarGracias() {
+    var i = agenda.info;
+    var paso2 = $('paso-agenda'), paso3 = $('paso-guia');
+    paso2.className = 'paso-g ' + (i.entrega ? 'hecho' : 'actual');
+    paso2.querySelector('.bola').innerHTML = i.entrega ? PALOMITA : '2';
+    paso2.querySelector('p').textContent = i.entrega
+      ? 'Tu videollamada de 50 minutos para explicarte tu diagnóstico y el plan a seguir.'
+      : 'Una videollamada de 50 minutos para explicarte tu diagnóstico y el plan a seguir. Elige el día y la hora que te queden mejor.';
+    paso3.className = 'paso-g ' + (i.guia && i.guia.veces ? 'hecho' : (i.entrega ? 'actual' : ''));
+    paso3.querySelector('.bola').innerHTML = i.guia && i.guia.veces ? PALOMITA : '3';
+    pintarAgenda();
+    pintarGuia();
+    pintarImplementacion();
+  }
+
+  function textoCita(c) { return c.fecha + ' · ' + c.hora + ' h'; }
+
+  function tarjetaCita(c, etiqueta) {
+    var t = el('div', { className: 'cita' });
+    if (etiqueta) t.appendChild(el('span', { className: 'tipo', text: etiqueta }));
+    t.appendChild(el('div', { className: 'cuando', text: textoCita(c) }));
+    t.appendChild(el('div', { className: 'detalle', text: c.pasada ? 'Sesión realizada.' :
+      '50 minutos, hora de Culiacán. ' + (c.invitacion === 'enviada'
+        ? 'La invitación con el enlace de la videollamada está en ' + c.correo + '.'
+        : 'La invitación con el enlace de la videollamada llega a ' + c.correo + ' en unos minutos.') }));
+    if (!c.pasada) {
+      var acc = el('div', { className: 'acciones' });
+      if (c.meet) acc.appendChild(el('a', { className: 'btn btn-oscuro btn-chico', href: c.meet, target: '_blank', rel: 'noopener', text: 'Entrar a la videollamada' }));
+      if (c.movible) {
+        var mover = el('button', { type: 'button', className: 'btn btn-linea btn-chico', text: 'Mover sesión' });
+        mover.addEventListener('click', function () { agenda.elegirPara = { tipo: c.tipo, mover: c.id }; pintarGracias(); });
+        acc.appendChild(mover);
+      } else {
+        acc.appendChild(el('span', { className: 'detalle', text: 'Faltan menos de 24 horas: para cambiarla escríbenos por WhatsApp.' }));
+      }
+      t.appendChild(acc);
+    }
+    return t;
+  }
+
+  function pintarAgenda() {
+    var caja = $('agenda');
+    caja.innerHTML = '';
+    var i = agenda.info, e = agenda.elegirPara;
+    if (i.entrega && !(e && e.tipo === 'entrega')) { caja.appendChild(tarjetaCita(i.entrega)); return; }
+    if (!i.entrega || (e && e.tipo === 'entrega')) selector(caja, e && e.tipo === 'entrega' ? e : { tipo: 'entrega' });
+  }
+
+  function pintarImplementacion() {
+    var caja = $('implementacion'), i = agenda.info, e = agenda.elegirPara;
+    var impl = i.implementacion || [];
+    caja.innerHTML = '';
+    caja.hidden = !(i.entrega && i.entrega.pasada) && !impl.length;
+    if (caja.hidden) return;
+    caja.appendChild(el('h3', { text: 'Sesiones de implementación' }));
+    caja.appendChild(el('p', { text: 'Tienes 2 sesiones de 50 minutos para resolver dudas mientras aplicas tu plan. Se agendan dentro de los próximos 14 días.' }));
+    impl.forEach(function (c, k) {
+      if (e && e.mover === c.id) return;
+      caja.appendChild(tarjetaCita(c, 'Implementación ' + (k + 1)));
+    });
+    if (e && e.tipo === 'implementacion') { selector(caja, e); return; }
+    if (i.puedeImplementacion) {
+      var b = el('button', { type: 'button', className: 'btn btn-oscuro btn-chico', text: 'Agendar sesión de implementación' });
+      b.style.marginTop = '12px';
+      b.addEventListener('click', function () { agenda.elegirPara = { tipo: 'implementacion' }; pintarGracias(); });
+      caja.appendChild(b);
+    }
+  }
+
+  // Elegir día y hora (para agendar o para mover).
+  function selector(caja, para) {
+    var cont = el('div');
+    caja.appendChild(cont);
+    cont.appendChild(el('div', { className: 'mensaje info', text: 'Buscando horarios libres…' }));
+    llamar('/horarios', { codigo: estado.codigo, tipo: para.tipo, mover: para.mover || '' }).then(function (r) {
+      cont.innerHTML = '';
+      if (!r.ok) { cont.appendChild(el('div', { className: 'mensaje error', text: MOTIVOS[r.motivo] || MOTIVOS.servidor })); return; }
+      if (!r.dias.length) {
+        cont.appendChild(el('p', { className: 'vacio', text: 'Por ahora no hay horarios libres. Escríbenos por WhatsApp al 667 411 1515 y te encontramos un espacio.' }));
+        return;
+      }
+      cont.appendChild(el('div', { className: 'sub-et', text: 'Día' }));
+      var dias = el('div', { className: 'opciones dias', role: 'radiogroup', 'aria-label': 'Día' });
+      var horas = el('div', { className: 'opciones horas', role: 'radiogroup', 'aria-label': 'Hora' });
+      var nombre = 'h-' + para.tipo;
+      function pintarHoras(d) {
+        horas.innerHTML = '';
+        d.horas.forEach(function (h) {
+          var inp = el('input', { type: 'radio', name: nombre, value: h.inicio });
+          horas.appendChild(el('label', { className: 'opcion' }, [inp, document.createTextNode(h.hora)]));
+        });
+      }
+      r.dias.forEach(function (d, k) {
+        var partes = d.etiqueta.split(' ');
+        var inp = el('input', { type: 'radio', name: 'd-' + para.tipo, value: d.fecha });
+        if (k === 0) inp.checked = true;
+        inp.addEventListener('change', function () { pintarHoras(d); });
+        dias.appendChild(el('label', { className: 'opcion' }, [inp, el('small', { text: partes[0] }), document.createTextNode(partes.slice(1).join(' '))]));
+      });
+      cont.appendChild(dias);
+      cont.appendChild(el('div', { className: 'sub-et', text: 'Hora (Culiacán)' }));
+      cont.appendChild(horas);
+      pintarHoras(r.dias[0]);
+
+      var correo = null;
+      if (!para.mover) {
+        cont.appendChild(el('div', { className: 'sub-et', text: 'Correo para la invitación' }));
+        correo = el('input', { type: 'email', autocomplete: 'email', 'aria-label': 'Correo para la invitación' });
+        correo.value = agenda.info.correo || '';
+        cont.appendChild(correo);
+      }
+      var msg = el('div');
+      var acc = el('div', { className: 'acciones' });
+      var ok = el('button', { type: 'button', className: 'btn btn-oscuro', text: para.mover ? 'Confirmar nuevo horario' : 'Agendar sesión' });
+      acc.appendChild(ok);
+      if (para.mover || para.tipo === 'implementacion') {
+        var cancelar = el('button', { type: 'button', className: 'btn btn-linea', text: 'Cancelar' });
+        cancelar.addEventListener('click', function () { agenda.elegirPara = null; pintarGracias(); });
+        acc.appendChild(cancelar);
+      }
+      cont.appendChild(acc);
+      cont.appendChild(msg);
+
+      ok.addEventListener('click', function () {
+        var elegido = cont.querySelector('input[name="' + nombre + '"]:checked');
+        msg.innerHTML = '';
+        if (!elegido) { msg.appendChild(el('div', { className: 'mensaje error', text: 'Elige una hora.' })); return; }
+        if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.value.trim())) { msg.appendChild(el('div', { className: 'mensaje error', text: MOTIVOS.correo })); return; }
+        ok.disabled = true; ok.textContent = 'Agendando…';
+        var ruta = para.mover ? '/reagendar' : '/agendar';
+        var cuerpo = para.mover ? { codigo: estado.codigo, id: para.mover, inicio: elegido.value }
+          : { codigo: estado.codigo, tipo: para.tipo, inicio: elegido.value, correo: correo.value.trim() };
+        llamar(ruta, cuerpo).then(function (res) {
+          if (res.ok) {
+            agenda.info = Object.assign({}, agenda.info, res);
+            agenda.elegirPara = null;
+            pintarGracias();
+            var cita = para.tipo === 'entrega' ? res.entrega
+              : (res.implementacion || []).filter(function (c) { return c.inicio === elegido.value; })[0];
+            if (cita) abrirModal(cita, para);
+            return;
+          }
+          if (res.motivo === 'ocupado') { selectorDeNuevo(caja, para, MOTIVOS.ocupado); return; }
+          ok.disabled = false; ok.textContent = para.mover ? 'Confirmar nuevo horario' : 'Agendar sesión';
+          msg.appendChild(el('div', { className: 'mensaje error', text: MOTIVOS[res.motivo] || MOTIVOS.servidor }));
+        }).catch(function () {
+          ok.disabled = false; ok.textContent = para.mover ? 'Confirmar nuevo horario' : 'Agendar sesión';
+          msg.appendChild(el('div', { className: 'mensaje error', text: MOTIVOS.servidor }));
+        });
+      });
+    }).catch(function () {
+      cont.innerHTML = '';
+      cont.appendChild(el('div', { className: 'mensaje error', text: MOTIVOS.servidor }));
+    });
+  }
+  function selectorDeNuevo(caja, para, aviso) {
+    pintarGracias();
+    var destino = para.tipo === 'entrega' ? $('agenda') : $('implementacion');
+    destino.insertBefore(el('div', { className: 'mensaje error', text: aviso }), destino.firstChild);
+  }
+
+  function pintarGuia() {
+    var caja = $('guia-caja'), g = agenda.info.guia || {};
+    caja.innerHTML = '';
+    if (!g.disponible) {
+      var c = el('div', { className: 'candado' });
+      c.innerHTML = CANDADO;
+      c.appendChild(el('span', { text: 'Se desbloquea al agendar tu sesión de entrega.' }));
+      caja.appendChild(c);
+      return;
+    }
+    var b = el('button', { type: 'button', className: 'btn ' + (g.veces ? 'btn-linea' : 'btn-oscuro') + ' btn-chico', text: g.veces ? 'Descargar de nuevo' : 'Descargar guía (PDF)' });
+    b.addEventListener('click', function () { descargarGuia(b); });
+    caja.appendChild(b);
+    if (g.veces) caja.appendChild(el('div', { className: 'veces', text: 'Ya la descargaste. Puedes volver a bajarla cuando quieras.' }));
+  }
+
+  function descargarGuia(boton) {
+    var texto = boton.textContent;
+    boton.disabled = true; boton.textContent = 'Preparando…';
+    return llamar('/guia', { codigo: estado.codigo }).then(function (r) {
+      boton.disabled = false; boton.textContent = texto;
+      if (!r.ok) { alertaGuia(MOTIVOS[r.motivo] || MOTIVOS.servidor); return; }
+      var g = agenda.info.guia || {};
+      agenda.info.guia = { disponible: true, veces: (g.veces || 0) + 1, ultima: new Date().toISOString() };
+      cerrarModal();
+      pintarGracias();
+      location.href = r.url;
+    }).catch(function () {
+      boton.disabled = false; boton.textContent = texto;
+      alertaGuia(MOTIVOS.servidor);
+    });
+  }
+  function alertaGuia(t) {
+    var caja = $('guia-caja');
+    var viejo = caja.querySelector('.mensaje'); if (viejo) viejo.remove();
+    caja.appendChild(el('div', { className: 'mensaje error', text: t }));
+  }
+
+  function abrirModal(cita, para) {
+    $('modal-titulo').textContent = para.mover ? 'Listo, movimos tu sesión' : 'Gracias por agendar';
+    $('modal-cita').textContent = (para.tipo === 'entrega' ? 'Sesión de entrega: ' : 'Sesión de implementación: ') + textoCita(cita) + ' (Culiacán)';
+    $('modal-correo').textContent = para.mover
+      ? 'Te mandamos la invitación actualizada a ' + cita.correo + '.'
+      : 'Te llega a ' + cita.correo + ' la invitación de Google Calendar con el enlace de la videollamada.';
+    var guiaLista = para.tipo === 'entrega' && !para.mover;
+    $('modal-guia').hidden = !guiaLista;
+    $('modal-guia').parentNode.previousElementSibling.hidden = !guiaLista;
+    $('velo-agenda').hidden = false;
+    (guiaLista ? $('modal-guia') : $('modal-cerrar')).focus();
+  }
+  function cerrarModal() { $('velo-agenda').hidden = true; }
+  $('modal-cerrar').addEventListener('click', cerrarModal);
+  $('velo-agenda').addEventListener('click', function (ev) { if (ev.target === this) cerrarModal(); });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && !$('velo-agenda').hidden) cerrarModal(); });
+  $('modal-guia').addEventListener('click', function () { descargarGuia(this); });
 
   // Enlace directo: avandco.mx/formulario/?c=AVCO-XXXX-XXXX llena el código solo.
   var c = new URLSearchParams(location.search).get('c');

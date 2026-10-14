@@ -248,6 +248,41 @@ select:disabled{opacity:.6}
 .nota-doc{margin-top:18px;padding:14px 16px;border-radius:14px;background:rgba(255,255,255,.6);font-size:14px;color:var(--tinta-2)}
 .doc a{color:var(--cafe-700)}
 
+/* Agenda propia (paso 2) y guía (paso 3) */
+.paso-g.actual .bola{background:var(--cafe-700);color:#fff}
+.agenda,.guia-caja{margin-top:16px}
+.agenda .sub-et{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--tinta-3);font-weight:600;margin:16px 0 8px}
+.agenda .opcion{padding:9px 14px;font-size:14px}
+.agenda .dias .opcion{flex-direction:column;align-items:flex-start;line-height:1.25;border-radius:16px}
+.agenda .dias .opcion small{font-size:11.5px;opacity:.75;text-transform:capitalize}
+.agenda .horas .opcion{font-variant-numeric:tabular-nums;min-width:74px;justify-content:center}
+.agenda input[type=email]{width:100%;font:inherit;color:var(--tinta);background:rgba(255,255,255,.75);border:1px solid rgba(90,70,54,.16);border-radius:14px;padding:12px 14px}
+.agenda .acciones{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.agenda .mensaje{margin:14px 0 0}
+.agenda .vacio{font-size:14.5px;color:var(--tinta-2)}
+.cita{border-radius:18px;padding:16px 18px;background:rgba(255,255,255,.7);border:1px solid #fff;box-shadow:0 10px 28px -18px rgba(74,55,38,.45)}
+.cita .cuando{font-weight:600;font-size:16px;text-transform:none}
+.cita .cuando::first-letter{text-transform:uppercase}
+.cita .detalle{font-size:14px;color:var(--tinta-2);margin-top:4px}
+.cita .acciones{margin-top:12px}
+.cita+.cita{margin-top:10px}
+.cita .tipo{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--cafe-500);font-weight:600;display:block;margin-bottom:4px}
+.guia-caja .candado{display:flex;gap:12px;align-items:center;font-size:14px;color:var(--tinta-2);padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.45);border:1px dashed rgba(90,70,54,.3)}
+.guia-caja .candado svg{flex:none}
+.guia-caja .veces{font-size:13px;color:var(--tinta-3);margin-top:8px}
+.implementacion{border-top:1px solid rgba(90,70,54,.15);padding-top:22px;margin-bottom:22px}
+.implementacion h3{font-size:17px}
+.implementacion>p{color:var(--tinta-2);font-size:14.5px;margin:6px 0 14px}
+.velo-agenda{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(42,32,25,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.modal{width:min(30rem,100%);max-height:calc(100vh - 32px);overflow:auto;border-radius:28px;padding:clamp(24px,5vw,36px);text-align:center;background:rgba(255,253,250,.92)}
+.modal .sello{margin:0 auto}
+.modal h2{font-size:clamp(24px,3vw,28px);margin-top:20px}
+.modal p{color:var(--tinta-2);margin-top:10px;font-size:15px}
+.modal .modal-cita{color:var(--tinta);font-weight:600;font-size:16px}
+.modal-lista{text-align:left;margin:16px auto 0;padding:14px 18px 14px 34px;border-radius:16px;background:rgba(255,255,255,.7);font-size:14.5px;color:var(--tinta-2);max-width:24rem}
+.modal-lista li+li{margin-top:4px}
+.modal-botones{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:20px}
+
 /* Celular */
 @media (max-width:860px){
   .tarjetas-flota{grid-template-columns:1fr;margin-top:-90px}

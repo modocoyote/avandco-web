@@ -2,3 +2,6 @@
 RewriteEngine On
 RewriteCond %{HTTPS} off
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Sin listados de carpetas
+Options -Indexes
