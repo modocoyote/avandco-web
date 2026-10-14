@@ -803,8 +803,17 @@
     estado.bloque = i;
     var b = BLOQUES[i];
     var av = $('avance'); av.innerHTML = '';
-    BLOQUES.forEach(function (_, k) { var s = document.createElement('span'); if (k <= i) s.className = 'hecho'; av.appendChild(s); });
+    BLOQUES.forEach(function (bq, k) {
+      var li = el('li', { className: k < i ? 'hecho' : (k === i ? 'actual' : '') });
+      var bola = el('span', { className: 'bola' });
+      if (k < i) bola.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+      else bola.textContent = String(k + 1);
+      li.appendChild(bola); li.appendChild(el('span', { className: 't', text: bq.titulo }));
+      if (k === i) li.setAttribute('aria-current', 'step');
+      av.appendChild(li);
+    });
     $('avance-texto').textContent = 'Bloque ' + (i + 1) + ' de ' + BLOQUES.length;
+    $('paso-movil').textContent = 'Bloque ' + (i + 1) + ' de ' + BLOQUES.length + ' · ' + b.titulo;
     $('bloque-etiqueta').textContent = b.descripcion;
     $('bloque-titulo').textContent = b.titulo;
     mensaje('msg-bloque', '');
