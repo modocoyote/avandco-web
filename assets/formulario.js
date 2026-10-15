@@ -996,8 +996,8 @@
     paso2.className = 'paso-g ' + (i.entrega ? 'hecho' : 'actual');
     paso2.querySelector('.bola').innerHTML = i.entrega ? PALOMITA : '2';
     paso2.querySelector('p').textContent = i.entrega
-      ? 'Tu videollamada de 50 minutos para explicarte tu diagnóstico y el plan a seguir.'
-      : 'Una videollamada de 50 minutos para explicarte tu diagnóstico y el plan a seguir. Elige el día y la hora que te queden mejor.';
+      ? 'Tu videollamada de unos 30 minutos para explicarte tu diagnóstico y el plan a seguir.'
+      : 'Una videollamada de unos 30 minutos para explicarte tu diagnóstico y el plan a seguir. Elige el día y la hora que te queden mejor.';
     paso3.className = 'paso-g ' + (i.guia && i.guia.veces ? 'hecho' : (i.entrega ? 'actual' : ''));
     paso3.querySelector('.bola').innerHTML = i.guia && i.guia.veces ? PALOMITA : '3';
     pintarAgenda();
@@ -1012,7 +1012,7 @@
     if (etiqueta) t.appendChild(el('span', { className: 'tipo', text: etiqueta }));
     t.appendChild(el('div', { className: 'cuando', text: textoCita(c) }));
     t.appendChild(el('div', { className: 'detalle', text: c.pasada ? 'Sesión realizada.' :
-      '50 minutos, hora de Culiacán. ' + (c.invitacion === 'enviada'
+      (c.tipo === 'entrega' ? 'Unos 30 minutos' : 'Hasta 50 minutos') + ', hora de Culiacán. ' + (c.invitacion === 'enviada'
         ? 'La invitación con el enlace de la videollamada está en ' + c.correo + '.'
         : 'La invitación con el enlace de la videollamada llega a ' + c.correo + ' en unos minutos.') }));
     if (!c.pasada) {
@@ -1045,7 +1045,7 @@
     caja.hidden = !(i.entrega && i.entrega.pasada) && !impl.length;
     if (caja.hidden) return;
     caja.appendChild(el('h3', { text: 'Sesiones de implementación' }));
-    caja.appendChild(el('p', { text: 'Tienes 2 sesiones de 50 minutos para resolver dudas mientras aplicas tu plan. Se agendan dentro de los próximos 14 días.' }));
+    caja.appendChild(el('p', { text: 'Tienes 2 sesiones de hasta 50 minutos para resolver dudas mientras aplicas tu plan. Se agendan dentro de los próximos 14 días.' }));
     impl.forEach(function (c, k) {
       if (e && e.mover === c.id) return;
       caja.appendChild(tarjetaCita(c, 'Implementación ' + (k + 1)));
