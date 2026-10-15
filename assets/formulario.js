@@ -351,26 +351,25 @@
    },
    {
     "id": "p14",
-    "texto": "¿Inviertes en publicidad? ¿Cuánto al mes, en pesos mexicanos (MXN)?",
-    "tipo": "unica",
-    "opciones": [
-     "No invierto",
-     "Menos de $2,000 MXN",
-     "$2,000 a $5,000 MXN",
-     "$5,000 a $15,000 MXN",
-     "Más de $15,000 MXN"
-    ]
+    "texto": "¿Inviertes en publicidad?",
+    "tipo": "sino",
+    "si": {
+     "tipo": "unica",
+     "texto": "¿Cuánto al mes, en pesos mexicanos (MXN)?",
+     "opciones": [
+      "Menos de $2,000 MXN",
+      "$2,000 a $5,000 MXN",
+      "$5,000 a $15,000 MXN",
+      "Más de $15,000 MXN"
+     ]
+    }
    },
    {
     "id": "p15",
     "texto": "¿Les das algo de valor antes de que te compren?",
-    "tipo": "unica",
-    "opciones": [
-     "No",
-     "Sí"
-    ],
-    "detalle": {
-     "opcion": "Sí",
+    "tipo": "sino",
+    "si": {
+     "tipo": "texto",
      "texto": "¿Qué les das?"
     }
    }
@@ -472,31 +471,33 @@
    },
    {
     "id": "p24",
-    "texto": "¿Les vuelves a escribir? ¿Después de cuánto tiempo?",
-    "tipo": "unica",
-    "opciones": [
-     "No les vuelvo a escribir",
-     "Al día siguiente",
-     "A los 2 o 3 días",
-     "A la semana",
-     "Más de una semana después"
-    ]
+    "texto": "¿Les vuelves a escribir a los que no compraron?",
+    "tipo": "sino",
+    "si": {
+     "tipo": "unica",
+     "texto": "¿Después de cuánto tiempo?",
+     "opciones": [
+      "Al día siguiente",
+      "A los 2 o 3 días",
+      "A la semana",
+      "Más de una semana después"
+     ]
+    }
    },
    {
     "id": "p25",
     "texto": "¿Qué les escribes cuando les vuelves a escribir?",
     "tipo": "multiple",
     "ayuda": "Puedes marcar varias.",
-    "sola": "No les escribo",
     "opciones": [
-     "No les escribo",
      "Les pregunto si siguen interesados",
      "Les recuerdo el precio o la propuesta",
      "Les mando una promoción o descuento",
      "Les comparto información o contenido útil",
      "Les pregunto qué los detuvo",
      "Otro"
-    ]
+    ],
+    "depende": "p24"
    },
    {
     "id": "p26",
@@ -507,20 +508,24 @@
      "Menos de la mitad",
      "Como la mitad",
      "La mayoría"
-    ]
+    ],
+    "depende": "p24"
    },
    {
     "id": "p27",
-    "texto": "¿Llevas un registro de los interesados que no compraron? ¿Dónde?",
-    "tipo": "unica",
-    "opciones": [
-     "No",
-     "En una libreta",
-     "En Excel o Google Sheets",
-     "Con etiquetas de WhatsApp",
-     "En un CRM",
-     "Otro"
-    ]
+    "texto": "¿Llevas un registro de los interesados que no compraron?",
+    "tipo": "sino",
+    "si": {
+     "tipo": "unica",
+     "texto": "¿Dónde?",
+     "opciones": [
+      "En una libreta",
+      "En Excel o Google Sheets",
+      "Con etiquetas de WhatsApp",
+      "En un CRM",
+      "Otro"
+     ]
+    }
    }
   ]
  },
@@ -564,7 +569,7 @@
   var estado = { codigo: '', negocio: '', avisoVersion: '', avisoAceptadoEn: '', bloque: 0, respuestas: {} };
 
   // ---------- guardado local (solo en el navegador del cliente) ----------
-  function claveBorrador() { return 'avco-formulario-v2-' + estado.codigo; }
+  function claveBorrador() { return 'avco-formulario-v3-' + estado.codigo; }
   function guardarBorrador() {
     try {
       localStorage.setItem(claveBorrador(), JSON.stringify({
@@ -699,16 +704,60 @@
     return t;
   }
 
+  // Desplegable de opción única, con «Elige una opción» al inicio.
+  function desplegable(nombre, opciones, elegida, etiqueta) {
+    var s = el('select', { name: nombre, 'aria-label': etiqueta }, [el('option', { value: '', text: 'Elige una opción' })]);
+    opciones.forEach(function (op) { var o = el('option', { value: op, text: op }); if (op === elegida) o.selected = true; s.appendChild(o); });
+    return s;
+  }
+
   function crearCampo(p, num) {
     var cont = el('div', { className: 'campo', 'data-id': p.id });
     var r = estado.respuestas[p.id];
 
-    if (p.tipo === 'unica' || p.tipo === 'multiple') {
+    if (p.tipo === 'unica') {
+      var lt = titulo(p, num);
+      var sel = desplegable(p.id, p.opciones, r && r.v, p.texto);
+      sel.id = 'c-' + p.id; lt.setAttribute('for', sel.id);
+      cont.appendChild(lt); cont.appendChild(sel);
+      if (p.opciones.some(function (o) { return OTRO[o]; })) {
+        var otroU = campoTexto(p.id + '__otro', r && r.otro, 'Escribe cuál (obligatorio)');
+        otroU.className = 'sub-campo'; otroU.dataset.rol = 'otro';
+        cont.appendChild(otroU);
+      }
+      if (p.extra) {
+        var exU = campoTexto(p.id + '__extra', r && r.extra, p.extra.texto);
+        exU.className = 'sub-campo'; exU.dataset.rol = 'extra';
+        cont.appendChild(exU);
+      }
+    } else if (p.tipo === 'sino') {
+      // Interruptor de activado o desactivado, como el del aviso de privacidad.
+      r = r || { v: 'No' };
+      cont.appendChild(titulo(p, num));
+      var chk = el('input', { type: 'checkbox', name: p.id, id: 'c-' + p.id });
+      chk.checked = r.v === 'Sí';
+      cont.appendChild(el('label', { className: 'interruptor sino', for: chk.id }, [chk, el('span', { className: 'riel' }),
+        el('span', { className: 'txt' }, [el('b', { text: chk.checked ? 'Sí' : 'No' })])]));
+      var si = el('div', { className: 'sub-campo si-detalle' });
+      si.dataset.rol = 'si';
+      si.appendChild(el('label', { className: 'sub-titulo', for: 'c-' + p.id + '__d', text: p.si.texto }));
+      var d;
+      if (p.si.tipo === 'unica') d = desplegable(p.id + '__d', p.si.opciones, r.d, p.si.texto);
+      else d = campoTexto(p.id + '__d', r.d, 'Escríbelo aquí (obligatorio)');
+      d.id = 'c-' + p.id + '__d';
+      si.appendChild(d);
+      if (p.si.opciones && p.si.opciones.some(function (o) { return OTRO[o]; })) {
+        var otroS = campoTexto(p.id + '__otro', r.otro, 'Escribe cuál (obligatorio)');
+        otroS.className = 'sub-campo'; otroS.dataset.rol = 'otro';
+        si.appendChild(otroS);
+      }
+      cont.appendChild(si);
+    } else if (p.tipo === 'multiple') {
       var fs = el('fieldset', null, [titulo(p, num, true)]);
       var ops = el('div', { className: 'opciones' });
-      var marcados = p.tipo === 'multiple' ? ((r && r.v) || []) : [r && r.v];
+      var marcados = (r && r.v) || [];
       p.opciones.forEach(function (op) {
-        var i = el('input', { type: p.tipo === 'multiple' ? 'checkbox' : 'radio', name: p.id, value: op });
+        var i = el('input', { type: 'checkbox', name: p.id, value: op });
         if (marcados.indexOf(op) > -1) i.checked = true;
         ops.appendChild(el('label', { className: 'opcion' }, [i, document.createTextNode(op)]));
       });
@@ -718,12 +767,6 @@
         var otro = campoTexto(p.id + '__otro', r && r.otro, 'Escribe cuál (obligatorio)');
         otro.className = 'sub-campo'; otro.dataset.rol = 'otro';
         cont.appendChild(otro);
-      }
-      if (p.detalle || p.extra) {
-        var info = p.detalle || p.extra;
-        var ex = campoTexto(p.id + '__extra', r && r.extra, info.texto + (p.detalle ? ' (obligatorio)' : ''));
-        ex.className = 'sub-campo'; ex.dataset.rol = p.detalle ? 'detalle' : 'extra';
-        cont.appendChild(ex);
       }
     } else if (p.tipo === 'ubicacion') {
       r = r || {};
@@ -789,10 +832,13 @@
       var cont = document.querySelector('.campo[data-id="' + p.id + '"]');
       if (!cont) return;
       var r = estado.respuestas[p.id] || {};
+      if (p.depende) cont.hidden = !aplica(p);
       var otro = cont.querySelector('[data-rol="otro"]');
-      if (otro) otro.hidden = !(p.tipo === 'multiple' ? (r.v || []).some(function (x) { return OTRO[x]; }) : OTRO[r.v]);
-      var det = cont.querySelector('[data-rol="detalle"]');
-      if (det) det.hidden = r.v !== p.detalle.opcion;
+      if (otro) otro.hidden = !(p.tipo === 'multiple' ? (r.v || []).some(function (x) { return OTRO[x]; }) : OTRO[p.tipo === 'sino' ? r.d : r.v]);
+      if (p.tipo === 'sino') {
+        cont.querySelector('[data-rol="si"]').hidden = r.v !== 'Sí';
+        cont.querySelector('.interruptor .txt b').textContent = r.v === 'Sí' ? 'Sí' : 'No';
+      }
       var ex = cont.querySelector('[data-rol="extra"]');
       if (ex) ex.hidden = !r.v;
       var otra = cont.querySelector('[data-rol="otra"]');
@@ -834,6 +880,9 @@
     mostrar('pantalla-preguntas');
   }
 
+  // Una pregunta con «depende» solo aplica si la anterior se contestó que sí.
+  function aplica(p) { return !p.depende || (estado.respuestas[p.depende] || {}).v === 'Sí'; }
+
   function valorDe(nombre) {
     var x = document.querySelector('[name="' + nombre + '"]');
     return x ? (x.value || '').trim() : '';
@@ -841,13 +890,14 @@
 
   function leerBloque() {
     BLOQUES[estado.bloque].preguntas.forEach(function (p) {
-      if (p.tipo === 'unica' || p.tipo === 'multiple') {
+      if (p.tipo === 'unica') {
+        estado.respuestas[p.id] = { v: valorDe(p.id), otro: valorDe(p.id + '__otro'), extra: valorDe(p.id + '__extra') };
+      } else if (p.tipo === 'sino') {
+        var c = document.querySelector('input[name="' + p.id + '"]');
+        estado.respuestas[p.id] = { v: c && c.checked ? 'Sí' : 'No', d: valorDe(p.id + '__d'), otro: valorDe(p.id + '__otro') };
+      } else if (p.tipo === 'multiple') {
         var sel = Array.prototype.map.call(document.querySelectorAll('input[name="' + p.id + '"]:checked'), function (x) { return x.value; });
-        estado.respuestas[p.id] = {
-          v: p.tipo === 'multiple' ? sel : (sel[0] || ''),
-          otro: valorDe(p.id + '__otro'),
-          extra: valorDe(p.id + '__extra')
-        };
+        estado.respuestas[p.id] = { v: sel, otro: valorDe(p.id + '__otro') };
       } else if (p.tipo === 'ubicacion') {
         estado.respuestas[p.id] = { estado: valorDe(p.id + '__estado'), ciudad: valorDe(p.id + '__ciudad'), otra: valorDe(p.id + '__otra') };
       } else if (p.tipo === 'tres') {
@@ -859,11 +909,16 @@
   }
 
   function errorDe(p, r) {
+    if (!aplica(p)) return false;
     if (p.tipo === 'unica') {
       if (!r || !r.v) return true;
       if (OTRO[r.v] && !r.otro) return true;
-      if (p.detalle && r.v === p.detalle.opcion && !r.extra) return true;
       return false;
+    }
+    if (p.tipo === 'sino') {
+      if (!r || r.v !== 'Sí') return false;
+      if (!r.d) return true;
+      return !!(OTRO[r.d] && !r.otro);
     }
     if (p.tipo === 'multiple') {
       if (!r || !r.v.length) return true;
@@ -903,9 +958,12 @@
     BLOQUES.forEach(function (b) {
       b.preguntas.forEach(function (p) {
         var r = estado.respuestas[p.id];
-        if (p.tipo === 'unica') {
+        if (!aplica(p)) {
+          salida[p.id] = 'No aplica';
+        } else if (p.tipo === 'sino') {
+          salida[p.id] = r && r.v === 'Sí' ? 'Sí: ' + (OTRO[r.d] ? r.d + ': ' + r.otro : r.d) : 'No';
+        } else if (p.tipo === 'unica') {
           var v = OTRO[r.v] ? r.v + ': ' + r.otro : r.v;
-          if (p.detalle && r.v === p.detalle.opcion) v += ': ' + r.extra;
           if (p.extra && r.extra) v += ' — ' + r.extra;
           salida[p.id] = v;
         } else if (p.tipo === 'multiple') {
