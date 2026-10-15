@@ -51,7 +51,12 @@ p{margin:0}
 .menu-btn span{width:16px;height:1.5px;background:var(--tinta);transition:.25s}
 .menu-btn[aria-expanded=true] span:first-child{transform:translateY(3.25px) rotate(45deg)}
 .menu-btn[aria-expanded=true] span:last-child{transform:translateY(-3.25px) rotate(-45deg)}
-.menu-movil{position:absolute;top:calc(100% + 10px);left:0;right:0;border-radius:24px;padding:10px;display:grid;gap:2px;z-index:20;background:rgba(251,248,243,.97)}
+/* El encabezado va encima del contenido para que el menú del celular no quede detrás de la portada. */
+header{z-index:30}
+.menu-movil{position:absolute;top:calc(100% + 10px);left:0;right:0;border-radius:24px;padding:10px;display:grid;gap:2px;z-index:20;background:#FBF8F3;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 18px 48px rgba(42,32,25,.22),inset 0 1px 0 #fff}
+.menu-movil[hidden]{display:none}
+.menu-movil a:not(.btn){color:var(--tinta)}
+.menu-movil a:not(.btn):last-of-type{border-bottom:0}
 .menu-movil a:not(.btn){padding:14px 16px;border-radius:14px;text-decoration:none;font-size:16px;border-bottom:1px solid rgba(90,70,54,.08)}
 .menu-movil .btn{justify-content:center;margin-top:8px}
 

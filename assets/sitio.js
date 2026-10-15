@@ -4,6 +4,9 @@
   if (b && m) {
     b.addEventListener('click', function () { var abrir = m.hidden; m.hidden = !abrir; b.setAttribute('aria-expanded', abrir); });
     m.addEventListener('click', function (e) { if (e.target.closest('a')) { m.hidden = true; b.setAttribute('aria-expanded', 'false'); } });
+    var cerrar = function () { if (!m.hidden) { m.hidden = true; b.setAttribute('aria-expanded', 'false'); } };
+    document.addEventListener('click', function (e) { if (!e.target.closest('#menu-movil') && !e.target.closest('#menu-btn')) cerrar(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cerrar(); b.focus(); } });
   }
   var a = document.getElementById('anio'); if (a) a.textContent = new Date().getFullYear();
 })();
