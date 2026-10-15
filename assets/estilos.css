@@ -126,8 +126,26 @@ p{margin:0}
 .check{flex:none;width:20px;height:20px;border-radius:50%;background:var(--cafe-700);display:grid;place-items:center;margin-top:1px}
 
 /* Contacto, discreción y pie */
-.contacto-caja{max-width:44rem;margin:0 auto;border-radius:30px;padding:clamp(28px,5vw,48px);text-align:center}
-.contacto-caja .datos{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.contacto-caja{max-width:68rem;margin:0 auto;border-radius:30px;padding:clamp(24px,5vw,48px);display:grid;grid-template-columns:1fr 1.15fr;gap:clamp(24px,4vw,48px);align-items:start}
+.contacto-intro{min-width:0}
+.contacto-intro .titulo-seccion{max-width:14ch}
+.contacto-datos{list-style:none;padding:0;margin:26px 0 0;display:grid;gap:16px}
+.contacto-datos li{display:flex;gap:14px;align-items:flex-start}
+.contacto-datos .ic{flex:none;width:36px;height:36px;border-radius:50%;background:var(--cafe-700);display:grid;place-items:center}
+.contacto-datos b{display:block;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--cafe-500)}
+.contacto-datos a,.contacto-datos span{color:var(--tinta);text-decoration:none;overflow-wrap:anywhere}
+.contacto-datos a:hover{text-decoration:underline}
+.contacto-form{min-width:0;background:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.85);border-radius:24px;padding:clamp(18px,3vw,28px)}
+.contacto-form .campo{margin-bottom:16px}
+.contacto-form .fila-2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.contacto-form .interruptor{margin:4px 0 0}
+.contacto-form .interruptor a{color:var(--cafe-700)}
+.contacto-form .btn{width:100%;justify-content:center;margin-top:16px}
+.contacto-msj{margin:14px 0 0;font-size:14.5px;min-height:1px}
+.contacto-msj:empty{display:none}
+.contacto-msj.error{color:var(--error)}
+.contacto-msj.ok{color:var(--ok);font-weight:600}
+.trampa{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .discretos{display:flex;align-items:center;justify-content:center;gap:14px;text-align:center;padding:28px 16px 8px;color:var(--tinta-2);font-size:15px}
 .discretos img{width:26px;opacity:.8}
 .pie{position:relative;z-index:1;margin-top:40px;background:linear-gradient(180deg,#3a2d23,#211912);color:#e9dfd2;clip-path:polygon(0 36px,100% 0,100% 100%,0 100%);padding:96px 0 40px}
@@ -285,6 +303,7 @@ select:disabled{opacity:.6}
 
 /* Celular */
 @media (max-width:860px){
+  .contacto-caja{grid-template-columns:1fr}
   .tarjetas-flota{grid-template-columns:1fr;margin-top:-90px}
   .rejilla-4{grid-template-columns:repeat(2,minmax(0,1fr))}
   .dos-col,.marco,.gracias{grid-template-columns:1fr}
@@ -298,6 +317,7 @@ select:disabled{opacity:.6}
   .lateral h2{margin-bottom:16px}.lateral .logo{margin-bottom:20px}
 }
 @media (max-width:720px){
+  .contacto-form .fila-2{grid-template-columns:1fr}
   .links:not(.siempre){display:none}.menu-btn{display:flex}
   .barra>.vidrio{padding:8px 8px 8px 18px}
   .portada .lienzo{border-radius:26px;padding:48px 18px 150px}
