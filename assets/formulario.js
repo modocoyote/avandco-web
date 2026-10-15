@@ -768,6 +768,7 @@
     $('doc-aceptar').hidden = true;
     $('anexo-b').hidden = true;
     $('pago-espera').hidden = false;
+    pintarPagoAvisado();
     mensaje('msg-doc', aviso || '', 'info');
     $('doc-contenido').hidden = false;
     $('doc-contenido').innerHTML = '<p>Cargando…</p>';
@@ -782,6 +783,25 @@
       pintarBloques($('doc-contenido'), r.bloques, {});
     }).catch(function () { mensaje('msg-doc', MOTIVOS.servidor); });
   }
+
+  function pintarPagoAvisado() {
+    var en = estado.portal && estado.portal.pagoAvisado, t = $('pago-avisado-txt'), b = $('btn-pago-avisado');
+    t.hidden = !en; b.hidden = !!en;
+    if (en) t.textContent = 'Nos avisaste de tu transferencia el ' + new Date(en).toLocaleString('es-MX', { day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' }) + '. La revisamos y te avisamos por WhatsApp en cuanto se abra tu formulario.';
+  }
+
+  $('btn-pago-avisado').addEventListener('click', function () {
+    var btn = this;
+    btn.disabled = true;
+    llamar('/pago-avisado', { codigo: estado.codigo }).then(function (r) {
+      btn.disabled = false;
+      if (!r.ok) { mensaje('msg-doc', MOTIVOS[r.motivo] || MOTIVOS.servidor); return; }
+      estado.portal = r.portal;
+      if (r.portal && r.portal.pagoConfirmado) { irAlPortal(); return; }
+      pintarPagoAvisado();
+      mensaje('msg-doc', 'Listo, ya nos llegó tu aviso. No olvides mandar tu comprobante por WhatsApp.', 'info');
+    }).catch(function () { btn.disabled = false; mensaje('msg-doc', MOTIVOS.servidor); });
+  });
 
   $('btn-revisar-pago').addEventListener('click', function () {
     var btn = this;

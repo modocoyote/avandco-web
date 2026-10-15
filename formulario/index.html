@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <title>Portal del cliente · AV&amp;CO</title>
-  <link rel="stylesheet" href="/assets/estilos.css?v=8">
+  <link rel="stylesheet" href="/assets/estilos.css?v=9">
   <link rel="icon" href="/assets/marca/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" href="/assets/marca/favicon-32.png">
   <link rel="apple-touch-icon" href="/assets/marca/favicon-dorado.png">
@@ -69,7 +69,11 @@
           <div>
             <b>Recibimos tu aceptación</b>
             <p>Manda tu comprobante de pago por WhatsApp al <a href="https://wa.me/526674111515" rel="noopener">667 411 1515</a>. Si necesitas factura, envía junto con él tu Constancia de Situación Fiscal. Cuando confirmemos tu pago te avisamos por WhatsApp y aquí se abre tu formulario.</p>
-            <button class="btn btn-linea btn-chico" type="button" id="btn-revisar-pago">Revisar si ya se abrió</button>
+            <p id="pago-avisado-txt" class="avisado" hidden></p>
+            <div class="espera-botones">
+              <button class="btn btn-oscuro btn-chico" type="button" id="btn-pago-avisado">Ya hice mi transferencia</button>
+              <button class="btn btn-linea btn-chico" type="button" id="btn-revisar-pago">Revisar si ya se abrió</button>
+            </div>
           </div>
         </div>
       </div>
@@ -175,6 +179,6 @@
 <!-- Contrato para descargar en PDF (solo se ve al imprimir o guardar como PDF) -->
 <div id="impresion" class="impresion" aria-hidden="true"></div>
 
-<script src="/assets/formulario.js?v=10"></script>
+<script src="/assets/formulario.js?v=11"></script>
 </body>
 </html>

@@ -396,6 +396,8 @@ select:disabled{opacity:.6}
 .espera b{display:block;font-size:16px}
 .espera p{font-size:14.5px;color:var(--tinta-2);margin:4px 0 12px}
 .espera a{color:var(--cafe-700)}
+.espera-botones{display:flex;flex-wrap:wrap;gap:10px}
+.espera .avisado{margin:0 0 12px;padding:10px 12px;border-radius:12px;background:#EAF3EC;color:#1F5A33;font-weight:600}
 .botones-descarga{display:flex;flex-wrap:wrap;gap:10px}
 
 /* Cierre del servicio */
