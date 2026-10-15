@@ -1045,7 +1045,7 @@
     caja.hidden = !(i.entrega && i.entrega.pasada) && !impl.length;
     if (caja.hidden) return;
     caja.appendChild(el('h3', { text: 'Sesiones de implementación' }));
-    caja.appendChild(el('p', { text: 'Tienes 2 sesiones de hasta 50 minutos para resolver dudas mientras aplicas tu plan. Se agendan dentro de los próximos 14 días.' }));
+    caja.appendChild(el('p', { text: 'Tienes 2 sesiones de hasta 50 minutos para resolver dudas mientras aplicas tu plan. Se agendan dentro de la semana siguiente a tu entrega, con un día de margen.' }));
     impl.forEach(function (c, k) {
       if (e && e.mover === c.id) return;
       caja.appendChild(tarjetaCita(c, 'Implementación ' + (k + 1)));
