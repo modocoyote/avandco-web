@@ -1516,15 +1516,21 @@
   function descargarGuia(boton) {
     var texto = boton.textContent;
     boton.disabled = true; boton.textContent = 'Preparando…';
+    // La pestaña se abre en el clic (si no, el navegador la bloquea) y el PDF se carga en ella, sin sacar al cliente del portal.
+    var pestana = null;
+    try { pestana = window.open('', '_blank'); } catch (e) { pestana = null; }
+    if (pestana) { try { pestana.document.title = 'Preparando tu guía…'; pestana.document.body.innerHTML = '<p style="font:16px system-ui;padding:24px;color:#2a2019">Preparando tu guía…</p>'; } catch (e) {} }
     return llamar('/guia', { codigo: estado.codigo }).then(function (r) {
       boton.disabled = false; boton.textContent = texto;
-      if (!r.ok) { alertaGuia(MOTIVOS[r.motivo] || MOTIVOS.servidor); return; }
+      if (!r.ok) { if (pestana) pestana.close(); alertaGuia(MOTIVOS[r.motivo] || MOTIVOS.servidor); return; }
       var g = agenda.info.guia || {};
       agenda.info.guia = { disponible: true, veces: (g.veces || 0) + 1, ultima: new Date().toISOString() };
       cerrarModal();
       pintarGracias();
-      location.href = r.url;
+      if (pestana && !pestana.closed) pestana.location.href = r.url;
+      else { var enlace = document.createElement('a'); enlace.href = r.url; enlace.target = '_blank'; enlace.rel = 'noopener'; enlace.download = 'Guia-Diagnostico-Comercial-AVCO.pdf'; document.body.appendChild(enlace); enlace.click(); enlace.remove(); }
     }).catch(function () {
+      if (pestana) pestana.close();
       boton.disabled = false; boton.textContent = texto;
       alertaGuia(MOTIVOS.servidor);
     });
