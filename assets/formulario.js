@@ -1,5 +1,5 @@
 /* AV&CO · Formulario CCA
- * Flujo: código → aviso de privacidad → 6 bloques (30 preguntas) → envío al Worker de Cloudflare.
+ * Flujo: código → aviso de privacidad → 7 bloques (38 preguntas) → envío al Worker de Cloudflare.
  * Lo único que hay que configurar es API (la dirección del Worker, cuando esté publicado).
  */
 (function () {
@@ -269,8 +269,21 @@
    },
    {
     "id": "p7",
-    "texto": "¿Qué es lo que más vendes?",
+    "texto": "¿Qué es lo que más vendes y qué te gustaría vender más?",
     "tipo": "largo"
+   },
+   {
+    "id": "p31",
+    "texto": "Describe en una frase a tu cliente ideal",
+    "tipo": "texto",
+    "ayuda": "Ej.: dueños de talleres en Culiacán con 2 o más sucursales."
+   },
+   {
+    "id": "p32",
+    "texto": "¿Quién es tu principal competencia?",
+    "tipo": "texto",
+    "opcional": true,
+    "ayuda": "Opcional."
    },
    {
     "id": "p8",
@@ -345,24 +358,38 @@
     ]
    },
    {
+    "id": "p33",
+    "texto": "¿Cuál de esos te trae más clientes?",
+    "tipo": "unica",
+    "opciones": [
+     "WhatsApp",
+     "Facebook",
+     "Instagram",
+     "TikTok",
+     "Google",
+     "Página web",
+     "Recomendación",
+     "Llamadas",
+     "Visitas al local",
+     "No sé"
+    ]
+   },
+   {
     "id": "p13",
     "texto": "¿Cuántas personas te preguntan al mes, aproximadamente?",
     "tipo": "numero"
    },
    {
     "id": "p14",
-    "texto": "¿Inviertes en publicidad?",
-    "tipo": "sino",
-    "si": {
-     "tipo": "unica",
-     "texto": "¿Cuánto al mes, en pesos mexicanos (MXN)?",
-     "opciones": [
-      "Menos de $2,000 MXN",
-      "$2,000 a $5,000 MXN",
-      "$5,000 a $15,000 MXN",
-      "Más de $15,000 MXN"
-     ]
-    }
+    "texto": "¿Cuánto inviertes al mes en publicidad? (pesos mexicanos, MXN)",
+    "tipo": "unica",
+    "opciones": [
+     "No invierto",
+     "Menos de $2,000 MXN",
+     "$2,000 a $5,000 MXN",
+     "$5,000 a $15,000 MXN",
+     "Más de $15,000 MXN"
+    ]
    },
    {
     "id": "p15",
@@ -470,21 +497,6 @@
     ]
    },
    {
-    "id": "p24",
-    "texto": "¿Les vuelves a escribir a los que no compraron?",
-    "tipo": "sino",
-    "si": {
-     "tipo": "unica",
-     "texto": "¿Después de cuánto tiempo?",
-     "opciones": [
-      "Al día siguiente",
-      "A los 2 o 3 días",
-      "A la semana",
-      "Más de una semana después"
-     ]
-    }
-   },
-   {
     "id": "p25",
     "texto": "¿Qué les escribes cuando les vuelves a escribir?",
     "tipo": "multiple",
@@ -497,7 +509,8 @@
      "Les pregunto qué los detuvo",
      "Otro"
     ],
-    "depende": "p24"
+    "depende": "p23",
+    "salvo": "Nada, se quedan ahí"
    },
    {
     "id": "p26",
@@ -509,7 +522,8 @@
      "Como la mitad",
      "La mayoría"
     ],
-    "depende": "p24"
+    "depende": "p23",
+    "salvo": "Nada, se quedan ahí"
    },
    {
     "id": "p27",
@@ -526,6 +540,51 @@
       "Otro"
      ]
     }
+   }
+  ]
+ },
+ {
+  "id": "numeros",
+  "titulo": "Tus números",
+  "descripcion": "Aproximado está bien. Es confidencial.",
+  "preguntas": [
+   {
+    "id": "p34",
+    "texto": "¿Cuánto vendes al mes en promedio, contando los últimos 3 meses? (MXN)",
+    "tipo": "unica",
+    "opciones": [
+     "Menos de $30,000",
+     "$30,000 a $100,000",
+     "$100,000 a $300,000",
+     "$300,000 a $1,000,000",
+     "Más de $1,000,000",
+     "Prefiero no decir"
+    ]
+   },
+   {
+    "id": "p35",
+    "texto": "¿Qué margen te queda de cada venta, aproximadamente?",
+    "tipo": "unica",
+    "ayuda": "Lo que te queda después de pagar el producto o el servicio, antes de gastos fijos.",
+    "opciones": [
+     "Menos de 20%",
+     "20% a 40%",
+     "40% a 60%",
+     "Más de 60%",
+     "No sé"
+    ]
+   },
+   {
+    "id": "p36",
+    "texto": "¿Tus clientes vuelven a comprar?",
+    "tipo": "unica",
+    "opciones": [
+     "No, compran una sola vez",
+     "Sí, cada mes",
+     "Cada 2 a 6 meses",
+     "Una vez al año",
+     "Rara vez"
+    ]
    }
   ]
  },
@@ -560,6 +619,30 @@
     "id": "p30",
     "texto": "Si pudieras arreglar una sola cosa de tu proceso de venta, ¿cuál sería?",
     "tipo": "largo"
+   },
+   {
+    "id": "p37",
+    "texto": "¿Qué meta quieres lograr en los próximos 90 días?",
+    "tipo": "largo",
+    "ayuda": "Ej.: pasar de 3 a 6 ventas al mes."
+   },
+   {
+    "id": "p38",
+    "texto": "¿Cuántas horas a la semana puedes dedicar a aplicar cambios?",
+    "tipo": "unica",
+    "opciones": [
+     "Menos de 2",
+     "2 a 5",
+     "5 a 10",
+     "Más de 10"
+    ]
+   },
+   {
+    "id": "p39",
+    "texto": "Ligas de tu página o redes sociales",
+    "tipo": "texto",
+    "opcional": true,
+    "ayuda": "Opcional. Pega una o varias, separadas por comas."
    }
   ]
  }
@@ -1180,8 +1263,13 @@
     mostrar('pantalla-preguntas');
   }
 
-  // Una pregunta con «depende» solo aplica si la anterior se contestó que sí.
-  function aplica(p) { return !p.depende || (estado.respuestas[p.depende] || {}).v === 'Sí'; }
+  // Una pregunta con «depende» solo aplica si la anterior se contestó que sí
+  // (o, con «salvo», si la anterior no se contestó con esa opción).
+  function aplica(p) {
+    if (!p.depende) return true;
+    var v = (estado.respuestas[p.depende] || {}).v;
+    return p.salvo ? !!v && v !== p.salvo : v === 'Sí';
+  }
 
   function valorDe(nombre) {
     var x = document.querySelector('[name="' + nombre + '"]');
