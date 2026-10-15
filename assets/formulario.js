@@ -566,16 +566,13 @@
 ];
 
   var $ = function (id) { return document.getElementById(id); };
-  var estado = { codigo: '', negocio: '', avisoVersion: '', avisoAceptadoEn: '', bloque: 0, respuestas: {} };
+  var estado = { codigo: '', negocio: '', bloque: 0, respuestas: {}, portal: null };
 
   // ---------- guardado local (solo en el navegador del cliente) ----------
   function claveBorrador() { return 'avco-formulario-v3-' + estado.codigo; }
   function guardarBorrador() {
     try {
-      localStorage.setItem(claveBorrador(), JSON.stringify({
-        respuestas: estado.respuestas, bloque: estado.bloque,
-        avisoVersion: estado.avisoVersion, avisoAceptadoEn: estado.avisoAceptadoEn
-      }));
+      localStorage.setItem(claveBorrador(), JSON.stringify({ respuestas: estado.respuestas, bloque: estado.bloque }));
       $('guardado').textContent = 'Avance guardado en este dispositivo';
     } catch (e) { /* sin almacenamiento: el formulario sigue funcionando */ }
   }
@@ -586,9 +583,11 @@
 
   // ---------- utilidades ----------
   function mostrar(id) {
-    ['pantalla-codigo', 'pantalla-aviso', 'pantalla-preguntas', 'pantalla-gracias'].forEach(function (p) {
+    ['pantalla-codigo', 'pantalla-portal', 'pantalla-preguntas', 'pantalla-gracias', 'pantalla-final'].forEach(function (p) {
       $(p).hidden = (p !== id);
     });
+    $('ruta').hidden = (id === 'pantalla-codigo');
+    if (id !== 'pantalla-codigo') pintarRuta();
     window.scrollTo(0, 0);
   }
   function mensaje(contenedor, texto, tipo) {
@@ -620,6 +619,12 @@
     ya_agendada: 'Tu sesión de entrega ya estaba agendada.',
     no_disponible: 'Las sesiones de implementación se agendan después de tu sesión de entrega.',
     sin_cita: 'Primero agenda tu sesión de entrega; con eso se desbloquea tu guía.',
+    sin_autorizar: 'Primero acepta el contrato, los términos y el aviso de privacidad.',
+    sin_pago: 'Tu formulario se abre cuando confirmemos tu pago. Te avisamos por WhatsApp.',
+    orden: 'Vamos en orden: primero el contrato, luego los términos y al final el aviso.',
+    version_nueva: 'Este documento se acaba de actualizar. Te mostramos la versión nueva para que la leas antes de aceptar.',
+    sin_documento: 'No pudimos cargar este documento. Escríbenos por WhatsApp al 667 411 1515 y te ayudamos.',
+    faltan: 'Elige una calificación del 1 al 5.',
     servidor: 'No pudimos conectar. Revisa tu internet e inténtalo otra vez; tu avance está guardado.'
   };
 
@@ -634,45 +639,320 @@
       $('btn-codigo').disabled = false;
       if (!r.ok) { mensaje('msg-codigo', MOTIVOS[r.motivo] || MOTIVOS.servidor); return; }
       estado.codigo = codigo;
+      estado.portal = r.portal || null;
       if (r.enviado) { mensaje('msg-codigo', ''); borrarBorrador(); abrirGracias(r, true); return; }
       estado.negocio = r.negocio || '';
       var b = leerBorrador();
       if (b) {
         estado.respuestas = b.respuestas || {};
         estado.bloque = b.bloque || 0;
-        estado.avisoVersion = b.avisoVersion || '';
-        estado.avisoAceptadoEn = b.avisoAceptadoEn || '';
       }
       mensaje('msg-codigo', '');
-      if (estado.avisoAceptadoEn) { abrirBloque(estado.bloque); } else { abrirAviso(); }
+      irAlPortal();
     }).catch(function () {
       $('btn-codigo').disabled = false;
       mensaje('msg-codigo', MOTIVOS.servidor);
     });
   });
 
-  // ---------- paso 1: aviso de privacidad (se lee de /privacidad/ para que sea el mismo texto) ----------
-  function abrirAviso() {
-    $('saludo').textContent = estado.negocio ? 'Hola, ' + estado.negocio : 'Antes de empezar';
-    mostrar('pantalla-aviso');
-    fetch('/privacidad/').then(function (r) { return r.text(); }).then(function (html) {
-      var doc = new DOMParser().parseFromString(html, 'text/html');
-      var art = doc.getElementById('aviso');
-      if (!art) throw new Error('sin aviso');
-      estado.avisoVersion = art.getAttribute('data-version') || '';
-      var h1 = art.querySelector('h1'); if (h1) h1.remove();
-      $('aviso-contenido').innerHTML = '';
-      $('aviso-contenido').appendChild(document.importNode(art, true));
-    }).catch(function () {
-      $('aviso-contenido').innerHTML = '<p>No pudimos cargar el aviso aquí. Puedes leerlo en <a href="/privacidad/" target="_blank" rel="noopener">avandco.mx/privacidad</a>.</p>';
+  // ---------- portal: autorizaciones (contrato con anexo B, términos, aviso) y datos de pago ----------
+  // Los textos salen de la Bóveda (Notion) a través del Worker; el contrato y los términos no tienen página pública.
+  var DOCS = {
+    contrato: { paso: 1, corto: 'Contrato', etiqueta: 'Paso 1 de 3 · Contrato',
+      intro: 'Léelo con calma. Abajo están las autorizaciones opcionales y el botón para aceptar.',
+      acepto: 'Acepto el contrato de servicios', texto: 'Leí el contrato y sus anexos y acepto sus condiciones.' },
+    terminos: { paso: 2, corto: 'Términos', etiqueta: 'Paso 2 de 3 · Términos del servicio',
+      intro: 'Cómo funciona el servicio en el día a día: plazos, sesiones y cambios.',
+      acepto: 'Acepto los términos del servicio', texto: 'Leí los términos y los acepto.' },
+    aviso: { paso: 3, corto: 'Aviso de privacidad', etiqueta: 'Paso 3 de 3 · Aviso de privacidad',
+      intro: 'Cómo cuidamos tus datos. También está publicado en avandco.mx/privacidad.',
+      acepto: 'Acepto el aviso de privacidad', texto: 'He leído el aviso y acepto el tratamiento de mis datos para las finalidades necesarias.' }
+  };
+  var ANEXO_B = [
+    { v: 'Grabar sesiones', t: 'Grabar mis sesiones', d: 'Para compartírtelas después. Google Meet gratis no graba, así que es opcional.' },
+    { v: 'Hallazgos anónimos', t: 'Usar hallazgos anónimos', d: 'Datos agregados de tu Diagnóstico, sin nombres, en el contenido de AV&CO.' },
+    { v: 'Mención como cliente', t: 'Mencionar a tu negocio como cliente', d: 'Siempre con tu revisión previa del texto.' },
+    { v: 'Llamada de referencia', t: 'Tomar una llamada de referencia', d: 'Con un prospecto de AV&CO que quiera conocer tu experiencia.' }
+  ];
+  var docActual = null;
+
+  function irAlPortal(aviso) {
+    var p = estado.portal || {};
+    if (!p.autorizado) { abrirDocumento(p.siguiente || 'contrato', aviso); return; }
+    if (!p.pagoConfirmado) { abrirPago(aviso); return; }
+    abrirBloque(estado.bloque || 0);
+  }
+
+  function pintarPasosPortal(actual) {
+    var a = (estado.portal && estado.portal.aceptaciones) || {};
+    var lista = $('portal-pasos');
+    lista.innerHTML = '';
+    ['contrato', 'terminos', 'aviso', 'pago'].forEach(function (k, n) {
+      var hecho = k === 'pago' ? !!(estado.portal && estado.portal.pagoConfirmado) : !!a[k];
+      var li = el('li', { className: hecho ? 'hecho' : (k === actual ? 'actual' : '') });
+      var bola = el('span', { className: 'bola' });
+      if (hecho) bola.innerHTML = PALOMITA; else bola.textContent = String(n + 1);
+      li.appendChild(bola);
+      li.appendChild(el('span', { className: 't', text: k === 'pago' ? 'Datos de pago' : DOCS[k].corto }));
+      lista.appendChild(li);
+    });
+    $('portal-movil').textContent = actual === 'pago' ? 'Autorizaciones listas · datos de pago' : DOCS[actual].etiqueta;
+  }
+
+  function abrirDocumento(tipo, aviso) {
+    var d = DOCS[tipo];
+    docActual = { tipo: tipo, version: '' };
+    $('doc-etiqueta').textContent = estado.negocio ? 'Hola, ' + estado.negocio + ' · ' + d.etiqueta : d.etiqueta;
+    $('doc-titulo').textContent = tipo === 'contrato' ? 'Contrato de servicios' : tipo === 'terminos' ? 'Términos del servicio' : 'Aviso de privacidad';
+    $('doc-intro').textContent = d.intro;
+    $('doc-acepto-titulo').textContent = d.acepto;
+    $('doc-acepto-texto').textContent = d.texto;
+    $('doc-acepto').checked = false;
+    $('btn-doc').disabled = true;
+    $('doc-aceptar').hidden = false;
+    $('pago-espera').hidden = true;
+    $('anexo-b').hidden = tipo !== 'contrato';
+    if (tipo === 'contrato') pintarAnexoB();
+    mensaje('msg-doc', aviso || '', aviso ? 'info' : '');
+    $('doc-contenido').innerHTML = '<p>Cargando…</p>';
+    pintarPasosPortal(tipo);
+    mostrar('pantalla-portal');
+    llamar('/documento', { codigo: estado.codigo, tipo: tipo }).then(function (r) {
+      if (!r.ok) { $('doc-contenido').innerHTML = ''; mensaje('msg-doc', MOTIVOS[r.motivo] || MOTIVOS.servidor); return; }
+      docActual.version = r.version;
+      pintarBloques($('doc-contenido'), r.bloques, { sinCasillas: tipo === 'contrato' });
+      $('doc-contenido').scrollTop = 0;
+    }).catch(function () { mensaje('msg-doc', MOTIVOS.servidor); });
+  }
+
+  function pintarAnexoB() {
+    var caja = $('anexo-b-lista');
+    caja.innerHTML = '';
+    ANEXO_B.forEach(function (o, k) {
+      var lab = el('label', { className: 'interruptor', 'for': 'anexo-' + k });
+      lab.appendChild(el('input', { type: 'checkbox', id: 'anexo-' + k, value: o.v }));
+      lab.appendChild(el('span', { className: 'riel' }));
+      var txt = el('span', { className: 'txt' });
+      txt.appendChild(el('b', { text: o.t }));
+      txt.appendChild(el('span', { text: o.d }));
+      lab.appendChild(txt);
+      caja.appendChild(lab);
     });
   }
-  $('acepto').addEventListener('change', function () { $('btn-aviso').disabled = !this.checked; });
-  $('btn-aviso').addEventListener('click', function () {
-    if (!$('acepto').checked) return;
-    estado.avisoAceptadoEn = new Date().toISOString();
-    guardarBorrador();
-    abrirBloque(0);
+
+  $('doc-acepto').addEventListener('change', function () { $('btn-doc').disabled = !this.checked || !docActual || !docActual.version; });
+  $('btn-doc').addEventListener('click', function () {
+    if (!$('doc-acepto').checked || !docActual || !docActual.version) return;
+    var btn = this, tipo = docActual.tipo;
+    var anexo = tipo === 'contrato'
+      ? Array.prototype.map.call(document.querySelectorAll('#anexo-b-lista input:checked'), function (i) { return i.value; })
+      : [];
+    btn.disabled = true;
+    mensaje('msg-doc', 'Guardando tu aceptación…', 'info');
+    llamar('/aceptar', { codigo: estado.codigo, tipo: tipo, version: docActual.version, anexoB: anexo }).then(function (r) {
+      if (r.ok) { estado.portal = r.portal; mensaje('msg-doc', ''); irAlPortal(); return; }
+      if (r.motivo === 'version_nueva') { abrirDocumento(tipo, MOTIVOS.version_nueva); return; }
+      if (r.motivo === 'orden') {
+        return llamar('/verificar', { codigo: estado.codigo }).then(function (v) { if (v.ok) estado.portal = v.portal; irAlPortal(MOTIVOS.orden); });
+      }
+      btn.disabled = false;
+      mensaje('msg-doc', MOTIVOS[r.motivo] || MOTIVOS.servidor);
+    }).catch(function () { btn.disabled = false; mensaje('msg-doc', MOTIVOS.servidor); });
+  });
+
+  function abrirPago(aviso) {
+    docActual = null;
+    $('doc-etiqueta').textContent = 'Autorizaciones listas';
+    $('doc-titulo').textContent = 'Datos para tu pago';
+    $('doc-intro').textContent = 'Ya aceptaste el contrato, los términos y el aviso. Estos son los datos para tu transferencia.';
+    $('doc-aceptar').hidden = true;
+    $('anexo-b').hidden = true;
+    $('pago-espera').hidden = false;
+    mensaje('msg-doc', aviso || '', 'info');
+    $('doc-contenido').hidden = false;
+    $('doc-contenido').innerHTML = '<p>Cargando…</p>';
+    pintarPasosPortal('pago');
+    mostrar('pantalla-portal');
+    llamar('/documento', { codigo: estado.codigo, tipo: 'pago' }).then(function (r) {
+      if (!r.ok) {
+        $('doc-contenido').innerHTML = '';
+        $('doc-contenido').appendChild(el('p', { text: 'Te mandamos los datos para tu transferencia por WhatsApp. Si no los tienes, escríbenos al 667 411 1515.' }));
+        return;
+      }
+      pintarBloques($('doc-contenido'), r.bloques, {});
+    }).catch(function () { mensaje('msg-doc', MOTIVOS.servidor); });
+  }
+
+  $('btn-revisar-pago').addEventListener('click', function () {
+    var btn = this;
+    btn.disabled = true;
+    llamar('/verificar', { codigo: estado.codigo }).then(function (v) {
+      btn.disabled = false;
+      if (!v.ok) { mensaje('msg-doc', MOTIVOS[v.motivo] || MOTIVOS.servidor); return; }
+      estado.portal = v.portal;
+      if (v.enviado) { abrirGracias(v, true); return; }
+      if (v.portal && v.portal.pagoConfirmado) { irAlPortal(); return; }
+      mensaje('msg-doc', 'Todavía no vemos tu pago confirmado. Te avisamos por WhatsApp en cuanto lo confirmemos.', 'info');
+    }).catch(function () { btn.disabled = false; mensaje('msg-doc', MOTIVOS.servidor); });
+  });
+
+  // Bloques de la Bóveda a HTML (solo texto, negritas, cursivas y enlaces seguros).
+  function pintarBloques(caja, bloques, op) {
+    caja.innerHTML = '';
+    var lista = null, tipoLista = '';
+    (bloques || []).forEach(function (b) {
+      if (b.t === 'todo' && op.sinCasillas) return;           // el anexo B se contesta con los interruptores
+      if (b.t === 'ul' || b.t === 'ol' || b.t === 'todo') {
+        var tl = b.t === 'ol' ? 'ol' : 'ul';
+        if (!lista || tipoLista !== tl) { lista = el(tl); tipoLista = tl; caja.appendChild(lista); }
+        var li = el('li');
+        if (b.t === 'todo') li.appendChild(document.createTextNode(op.marcas && op.marcas.shift() ? '☑ ' : '☐ '));
+        lista.appendChild(conTexto(li, b.r, op));
+        return;
+      }
+      lista = null;
+      if (b.t === 'hr') { caja.appendChild(el('hr')); return; }
+      caja.appendChild(conTexto(el({ h1: 'h2', h2: 'h3', h3: 'h4', q: 'blockquote' }[b.t] || 'p'), b.r, op));
+    });
+  }
+  function conTexto(nodo, partes, op) {
+    (partes || []).forEach(function (x) {
+      var t = op && op.reemplazos ? Object.keys(op.reemplazos).reduce(function (s, k) { return s.split(k).join(op.reemplazos[k]); }, x.x) : x.x;
+      var n = document.createTextNode(t);
+      if (x.i) { var i = document.createElement('i'); i.appendChild(n); n = i; }
+      if (x.b) { var b = document.createElement('b'); b.appendChild(n); n = b; }
+      if (x.h && /^(https?:|mailto:)/.test(x.h)) { var a = document.createElement('a'); a.href = x.h; a.target = '_blank'; a.rel = 'noopener'; a.appendChild(n); n = a; }
+      nodo.appendChild(n);
+    });
+    return nodo;
+  }
+
+  // ---------- mapa del servicio (arriba, en todas las pantallas) ----------
+  var RUTA = ['Autorizaciones', 'Pago', 'Formulario', 'Sesión de entrega', 'Implementación', 'Cierre'];
+  function pasoActual() {
+    var p = estado.portal || {}, i = agenda.info;
+    if (i) {
+      if (i.final) return 5;
+      if (i.entrega && i.entrega.pasada) return 4;
+      return 3;
+    }
+    if (!p.autorizado) return 0;
+    if (!p.pagoConfirmado) return 1;
+    return 2;
+  }
+  function pintarRuta() {
+    var lista = $('ruta-lista'), actual = pasoActual();
+    lista.innerHTML = '';
+    RUTA.forEach(function (t, k) {
+      var li = el('li', { className: k < actual ? 'hecho' : (k === actual ? 'actual' : '') });
+      var bola = el('span', { className: 'bola' });
+      if (k < actual) bola.innerHTML = PALOMITA; else bola.textContent = String(k + 1);
+      li.appendChild(bola);
+      li.appendChild(el('span', { className: 't', text: t }));
+      if (k === actual) li.setAttribute('aria-current', 'step');
+      lista.appendChild(li);
+    });
+    $('ruta-movil').textContent = 'Paso ' + (actual + 1) + ' de ' + RUTA.length + ' · ' + RUTA[actual];
+  }
+
+  // ---------- contrato en PDF (el navegador lo guarda como PDF desde la ventana de impresión) ----------
+  function fechaHora(iso) {
+    try {
+      return new Intl.DateTimeFormat('es-MX', { timeZone: 'America/Mazatlan', dateStyle: 'long', timeStyle: 'short' }).format(new Date(iso));
+    } catch (e) { return iso; }
+  }
+  function botonContrato() {
+    var b = el('button', { type: 'button', className: 'btn btn-linea btn-chico', text: 'Descargar contrato (PDF)' });
+    b.addEventListener('click', function () { imprimirContrato(b); });
+    return b;
+  }
+  function imprimirContrato(boton) {
+    var texto = boton.textContent;
+    boton.disabled = true; boton.textContent = 'Preparando…';
+    llamar('/documento', { codigo: estado.codigo, tipo: 'contrato' }).then(function (r) {
+      boton.disabled = false; boton.textContent = texto;
+      if (!r.ok || !r.aceptado) { alertaGuia(MOTIVOS[r.motivo] || 'Tu contrato todavía no está listo para descargar. Escríbenos por WhatsApp al 667 411 1515.'); return; }
+      var c = $('impresion'), fecha = fechaHora(r.aceptado.en), anexo = r.aceptado.anexoB || [];
+      c.innerHTML = '';
+      var cab = el('div', { className: 'imp-cab' });
+      cab.appendChild(el('img', { src: '/assets/marca/logo.png', alt: 'AV&CO' }));
+      cab.appendChild(el('div', { className: 'imp-meta', text: 'Cliente: ' + (r.nombre || estado.negocio) + ' · Código: ' + estado.codigo }));
+      cab.appendChild(el('div', { className: 'imp-meta', text: 'Contrato versión ' + r.version + ' · Aceptado en línea el ' + fecha + ' (hora de Culiacán)' }));
+      cab.appendChild(el('div', { className: 'imp-meta', text: 'Autorizaciones del anexo B: ' + (anexo.length ? anexo.join(', ') : 'ninguna') }));
+      c.appendChild(cab);
+      var cuerpo = el('div', { className: 'imp-cuerpo' });
+      pintarBloques(cuerpo, r.bloques, {
+        reemplazos: { '[fecha y hora de aceptación]': fecha + ' (hora de Culiacán)' },
+        marcas: ANEXO_B.map(function (o) { return anexo.indexOf(o.v) >= 0; })
+      });
+      c.appendChild(cuerpo);
+      var titulo = document.title;
+      document.title = 'Contrato AV&CO · ' + (r.nombre || estado.negocio || estado.codigo);
+      window.addEventListener('afterprint', function volver() { document.title = titulo; window.removeEventListener('afterprint', volver); });
+      window.print();
+    }).catch(function () {
+      boton.disabled = false; boton.textContent = texto;
+      alertaGuia(MOTIVOS.servidor);
+    });
+  }
+
+  // ---------- cierre del servicio ----------
+  function abrirFinal(info) {
+    var p = estado.portal || {};
+    var nombre = info.negocio || p.nombre || '';
+    $('final-titulo').textContent = nombre ? 'Servicio terminado, ' + nombre : 'Servicio terminado';
+    var hoy = new Date().toISOString().slice(0, 10);
+    if (p.extrasHasta && hoy <= p.extrasHasta) {
+      var f = new Date(p.extrasHasta + 'T12:00:00Z').toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+      $('final-extras').textContent = 'Puedes sumar sesiones de $990 + IVA cada una, al mismo precio de tu propuesta, hasta el ' + f + '. Escríbenos y te las activamos aquí mismo, en tu portal.';
+    } else {
+      $('final-extras').textContent = 'Escríbenos y te compartimos el precio vigente de las sesiones adicionales. Se activan aquí mismo, en tu portal.';
+    }
+    $('final-whatsapp').href = 'https://wa.me/526674111515?text=' + encodeURIComponent('Hola, soy de ' + (nombre || 'mi negocio') + ' (código ' + estado.codigo + '). Quiero más sesiones de implementación.');
+    pintarOpinion(!!info.opinion);
+    var d = $('final-descargas');
+    d.innerHTML = '';
+    d.appendChild(el('h3', { text: 'Tus documentos' }));
+    var fila = el('div', { className: 'botones-descarga' });
+    var g = el('button', { type: 'button', className: 'btn btn-linea btn-chico', text: 'Descargar guía (PDF)' });
+    g.addEventListener('click', function () { descargarGuia(g); });
+    fila.appendChild(g);
+    fila.appendChild(botonContrato());
+    d.appendChild(fila);
+    mostrar('pantalla-final');
+  }
+
+  function pintarOpinion(enviada) {
+    if (enviada) {
+      $('opinion').innerHTML = '';
+      $('opinion').appendChild(el('h3', { text: 'Gracias por tu opinión' }));
+      $('opinion').appendChild(el('p', { className: 'final-texto', text: 'Nos ayuda a mejorar el servicio para los siguientes negocios.' }));
+      return;
+    }
+    var caja = $('op-satisfaccion');
+    if (caja.childNodes.length) return;
+    [1, 2, 3, 4, 5].forEach(function (n) {
+      var lab = el('label', { className: 'opcion' });
+      lab.appendChild(el('input', { type: 'radio', name: 'satisfaccion', value: String(n) }));
+      lab.appendChild(document.createTextNode(String(n)));
+      caja.appendChild(lab);
+    });
+  }
+  $('op-recomienda').addEventListener('change', function () { $('op-recomienda-txt').textContent = this.checked ? 'Sí' : 'No'; });
+  $('form-opinion').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var s = document.querySelector('input[name="satisfaccion"]:checked');
+    if (!s) { mensaje('msg-opinion', MOTIVOS.faltan); return; }
+    var btn = $('btn-opinion');
+    btn.disabled = true;
+    llamar('/opinion', {
+      codigo: estado.codigo, satisfaccion: Number(s.value),
+      recomendaria: $('op-recomienda').checked, comentario: $('op-comentario').value
+    }).then(function (r) {
+      btn.disabled = false;
+      if (!r.ok) { mensaje('msg-opinion', MOTIVOS[r.motivo] || MOTIVOS.servidor); return; }
+      pintarOpinion(true);
+    }).catch(function () { btn.disabled = false; mensaje('msg-opinion', MOTIVOS.servidor); });
   });
 
   // ---------- pasos 2 a 7: bloques ----------
@@ -1009,16 +1289,16 @@
     btn.disabled = true;
     btn.textContent = 'Enviando…';
     mensaje('msg-bloque', 'Enviando tus respuestas…', 'info');
-    llamar('/enviar', {
-      codigo: estado.codigo,
-      aviso: { version: estado.avisoVersion, aceptado_en: estado.avisoAceptadoEn },
-      respuestas: componer()
-    }).then(function (r) {
-      if (r.ok) { borrarBorrador(); abrirGracias(r, false); return; }
+    llamar('/enviar', { codigo: estado.codigo, respuestas: componer() }).then(function (r) {
+      if (r.ok) { borrarBorrador(); estado.portal = r.portal || estado.portal; abrirGracias(r, false); return; }
+      if (r.motivo === 'sin_pago' || r.motivo === 'sin_autorizar') {
+        btn.disabled = false; btn.textContent = textoBtn;
+        return llamar('/verificar', { codigo: estado.codigo }).then(function (v) { if (v.ok) estado.portal = v.portal; irAlPortal(MOTIVOS[r.motivo]); });
+      }
       if (r.motivo === 'usado') {
         // Ya se había enviado (por ejemplo, desde otro dispositivo): pasa directo a la pantalla de gracias.
         return llamar('/verificar', { codigo: estado.codigo }).then(function (v) {
-          if (v.ok && v.enviado) { borrarBorrador(); abrirGracias(v, true); return; }
+          if (v.ok && v.enviado) { borrarBorrador(); estado.portal = v.portal || estado.portal; abrirGracias(v, true); return; }
           btn.disabled = false; btn.textContent = textoBtn;
           mensaje('msg-bloque', MOTIVOS.usado);
         });
@@ -1040,6 +1320,7 @@
   function abrirGracias(info, deVuelta) {
     agenda.info = info;
     agenda.elegirPara = null;
+    if (info.final) { abrirFinal(info); return; }
     if (deVuelta) {
       $('gracias-titulo').textContent = info.negocio ? 'Hola de nuevo, ' + info.negocio : 'Hola de nuevo';
       $('gracias-texto').textContent = 'Ya tenemos tus respuestas. Desde aquí agendas o mueves tu sesión y descargas tu guía.';
@@ -1061,6 +1342,7 @@
     pintarAgenda();
     pintarGuia();
     pintarImplementacion();
+    pintarRuta();
   }
 
   function textoCita(c) { return c.fecha + ' · ' + c.hora + ' h'; }
@@ -1103,7 +1385,10 @@
     caja.hidden = !(i.entrega && i.entrega.pasada) && !impl.length;
     if (caja.hidden) return;
     caja.appendChild(el('h3', { text: 'Sesiones de implementación' }));
-    caja.appendChild(el('p', { text: 'Tienes 2 sesiones de hasta 50 minutos para resolver dudas mientras aplicas tu plan. Se agendan dentro de la semana siguiente a tu entrega, con un día de margen.' }));
+    var total = i.implMax || 2;
+    caja.appendChild(el('p', { text: total > 2
+      ? 'Tienes ' + total + ' sesiones de hasta 50 minutos: las 2 incluidas y ' + (total - 2) + ' adicional' + (total - 2 > 1 ? 'es' : '') + '. Las 2 primeras van en la semana siguiente a tu entrega, con un día de margen; las adicionales, según la frecuencia que acordamos.'
+      : 'Tienes 2 sesiones de hasta 50 minutos para resolver dudas mientras aplicas tu plan. Se agendan dentro de la semana siguiente a tu entrega, con un día de margen.' }));
     impl.forEach(function (c, k) {
       if (e && e.mover === c.id) return;
       caja.appendChild(tarjetaCita(c, 'Implementación ' + (k + 1)));
@@ -1219,10 +1504,13 @@
       caja.appendChild(c);
       return;
     }
-    var b = el('button', { type: 'button', className: 'btn ' + (g.veces ? 'btn-linea' : 'btn-oscuro') + ' btn-chico', text: g.veces ? 'Descargar de nuevo' : 'Descargar guía (PDF)' });
+    var fila = el('div', { className: 'botones-descarga' });
+    var b = el('button', { type: 'button', className: 'btn ' + (g.veces ? 'btn-linea' : 'btn-oscuro') + ' btn-chico', text: g.veces ? 'Descargar guía de nuevo' : 'Descargar guía (PDF)' });
     b.addEventListener('click', function () { descargarGuia(b); });
-    caja.appendChild(b);
-    if (g.veces) caja.appendChild(el('div', { className: 'veces', text: 'Ya la descargaste. Puedes volver a bajarla cuando quieras.' }));
+    fila.appendChild(b);
+    fila.appendChild(botonContrato());
+    caja.appendChild(fila);
+    if (g.veces) caja.appendChild(el('div', { className: 'veces', text: 'Ya descargaste la guía. Puedes volver a bajarla cuando quieras.' }));
   }
 
   function descargarGuia(boton) {
@@ -1242,7 +1530,7 @@
     });
   }
   function alertaGuia(t) {
-    var caja = $('guia-caja');
+    var caja = $('pantalla-final').hidden ? $('guia-caja') : $('final-descargas');
     var viejo = caja.querySelector('.mensaje'); if (viejo) viejo.remove();
     caja.appendChild(el('div', { className: 'mensaje error', text: t }));
   }

@@ -363,3 +363,81 @@ select:disabled{opacity:.6}
 .aviso-caja .doc .intro{font-size:14px}
 .aviso-caja .item-doc{grid-template-columns:1fr}
 .aviso-caja .item-doc .ic{display:none}
+
+/* Portal del cliente: mapa del servicio arriba */
+.ruta{max-width:66rem;margin:28px auto -10px;border-radius:24px;padding:14px 18px}
+.ruta ol{list-style:none;margin:0;padding:0;display:flex;gap:6px;justify-content:space-between}
+.ruta li{flex:1;min-width:0;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tinta-3);position:relative}
+.ruta li:not(:last-child)::after{content:"";flex:1;height:2px;min-width:8px;background:rgba(90,70,54,.15);border-radius:2px}
+.ruta li.hecho::after{background:var(--ok)}
+.ruta .bola{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;background:rgba(255,255,255,.6);border:1px solid rgba(90,70,54,.15)}
+.ruta li.hecho .bola{background:var(--ok);border-color:var(--ok);color:#fff}
+.ruta li.actual{color:var(--tinta);font-weight:600}
+.ruta li.actual .bola{background:var(--cafe-700);border-color:var(--cafe-700);color:#fff}
+.ruta .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ruta-movil{display:none;margin:10px 0 0;font-size:13px;color:var(--tinta-2);text-align:center}
+
+/* Documentos de la Bóveda dentro del portal */
+.doc-texto{max-height:52vh;line-height:1.6}
+.doc-texto h2{font-size:18px;margin:6px 0 10px}
+.doc-texto h3{font-size:16px;margin:20px 0 6px}
+.doc-texto h4{font-size:15px;margin:16px 0 4px}
+.doc-texto p{margin:0 0 10px}
+.doc-texto ul,.doc-texto ol{margin:0 0 10px;padding-left:22px}
+.doc-texto hr{border:0;border-top:1px solid rgba(90,70,54,.15);margin:16px 0}
+.doc-texto a{color:var(--cafe-700)}
+.anexo-b{margin-top:18px}
+.anexo-b h3{font-size:16px}
+.anexo-b>p{font-size:14px;color:var(--tinta-2);margin-top:4px}
+.anexo-b .interruptor{margin-top:8px;padding:12px 16px}
+#doc-aceptar{margin-top:6px}
+.espera{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;margin-top:16px;padding:18px;border-radius:18px;background:rgba(255,255,255,.7);border:1px solid #fff}
+.espera-ic{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--cafe-700);color:#fff}
+.espera b{display:block;font-size:16px}
+.espera p{font-size:14.5px;color:var(--tinta-2);margin:4px 0 12px}
+.espera a{color:var(--cafe-700)}
+.botones-descarga{display:flex;flex-wrap:wrap;gap:10px}
+
+/* Cierre del servicio */
+.final-texto{color:var(--tinta-2);font-size:14.5px;margin-bottom:14px}
+.opinion{border-top:1px solid rgba(90,70,54,.15);margin-top:26px;padding-top:22px}
+.opinion h3,.final-descargas h3{font-size:17px;margin-bottom:12px}
+.opinion .campo{margin-bottom:16px}
+.etiqueta-campo{display:block;font-weight:600;margin-bottom:10px}
+.estrellas .opcion{min-width:48px;justify-content:center;font-variant-numeric:tabular-nums}
+.final-descargas{border-top:1px solid rgba(90,70,54,.15);margin-top:22px;padding-top:22px}
+
+/* Contrato para guardar como PDF: solo existe al imprimir */
+.impresion{display:none}
+@media print{
+  @page{margin:18mm 16mm}
+  body{background:#fff!important}
+  body>*:not(#impresion){display:none!important}
+  .impresion{display:block!important;color:#000;font:11pt/1.5 Georgia,serif}
+  .imp-cab{border-bottom:1px solid #999;padding-bottom:10px;margin-bottom:14px}
+  .imp-cab img{height:30px;margin-bottom:8px}
+  .imp-meta{font:9.5pt/1.45 Arial,sans-serif;color:#333}
+  .imp-cuerpo h2{font-size:15pt;margin:14px 0 6px}
+  .imp-cuerpo h3{font-size:12.5pt;margin:14px 0 4px}
+  .imp-cuerpo h4{font-size:11.5pt;margin:10px 0 2px}
+  .imp-cuerpo p{margin:0 0 6px}
+  .imp-cuerpo ul{list-style:none;padding-left:0}
+  .imp-cuerpo a{color:#000;text-decoration:none}
+  .imp-cuerpo h2,.imp-cuerpo h3,.imp-cuerpo h4{break-after:avoid}
+}
+
+@media (max-width:860px){
+  .ruta{padding:12px 14px}
+  .ruta .t{display:none}
+  .ruta li{flex:1 1 auto}
+  .ruta li:last-child{flex:none}
+  .ruta-movil{display:block}
+}
+@media (max-width:720px){
+  .ruta{margin:18px auto -6px;border-radius:20px}
+  .ruta li{gap:4px}
+  .doc-texto{max-height:48vh}
+  .espera{grid-template-columns:1fr}
+  .botones-descarga{flex-direction:column}
+  .botones-descarga .btn{justify-content:center}
+}

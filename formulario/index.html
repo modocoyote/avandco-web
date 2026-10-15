@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Formulario · AV&amp;CO</title>
-  <link rel="stylesheet" href="/assets/estilos.css?v=7">
+  <title>Portal del cliente · AV&amp;CO</title>
+  <link rel="stylesheet" href="/assets/estilos.css?v=8">
   <link rel="icon" href="/assets/marca/isotipo.png">
 </head>
 <body>
@@ -13,13 +13,16 @@
 <main>
   <div class="env">
 
+    <!-- Mapa del servicio: se ve en todas las pantallas después de poner el código -->
+    <nav id="ruta" class="ruta vidrio" aria-label="Tu avance" hidden><ol id="ruta-lista"></ol><p class="ruta-movil" id="ruta-movil"></p></nav>
+
     <!-- Paso 0: código -->
     <section id="pantalla-codigo" class="escena">
       <div class="rayo" aria-hidden="true"></div>
       <div class="caja-codigo vidrio">
         <img class="iso" src="/assets/marca/isotipo.png" alt="AV&amp;CO" width="48" height="45">
-        <h1>Escribe tu código</h1>
-        <p class="ayuda-caja">Te lo enviamos por WhatsApp o correo. Es personal y entra una sola vez al formulario.</p>
+        <h1>Tu portal de cliente</h1>
+        <p class="ayuda-caja">Escribe el código que te enviamos por WhatsApp. Es personal: con él entras siempre a tu portal y sigues donde te quedaste.</p>
         <div id="msg-codigo"></div>
         <form id="form-codigo" novalidate>
           <input id="codigo" class="codigo-input" type="text" aria-label="Código" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="AVCO-XXXX-XXXX" maxlength="20" required>
@@ -30,26 +33,42 @@
       </div>
     </section>
 
-    <!-- Paso 1: aviso de privacidad -->
-    <section id="pantalla-aviso" class="marco vidrio" hidden>
+    <!-- Autorizaciones (contrato con anexo B, términos y aviso) y datos de pago -->
+    <section id="pantalla-portal" class="marco vidrio" hidden>
       <aside class="lateral">
         <img class="logo" src="/assets/marca/logo.png" alt="AV&amp;CO" width="70" height="26">
-        <h2>Tu formulario</h2>
-        <p class="paso-movil">Antes de empezar · aviso de privacidad</p>
-        <ol class="pasos"><li class="actual"><span class="bola">1</span><span class="t">Aviso de privacidad</span></li><li><span class="bola">2</span><span class="t">Tus respuestas</span></li><li><span class="bola">3</span><span class="t">Listo</span></li></ol>
+        <h2>Antes de empezar</h2>
+        <p class="paso-movil" id="portal-movil"></p>
+        <ol class="pasos" id="portal-pasos"></ol>
       </aside>
       <div class="contenido">
-        <span class="etiqueta" id="saludo">Antes de empezar</span>
-        <h1>Aviso de privacidad</h1>
-        <p>Léelo aquí mismo y actívalo al final para empezar tu formulario.</p>
-        <div class="aviso-caja" id="aviso-contenido"><p>Cargando el aviso…</p></div>
-        <label class="interruptor" for="acepto">
-          <input type="checkbox" id="acepto"><span class="riel"></span>
-          <span class="txt"><b>Acepto el aviso de privacidad</b>He leído el aviso y acepto el tratamiento de mis datos para las finalidades necesarias.</span>
-        </label>
-        <div class="acciones" style="border-top:0">
-          <span></span>
-          <button class="btn btn-oscuro" type="button" id="btn-aviso" disabled>Empezar el formulario</button>
+        <span class="etiqueta" id="doc-etiqueta"></span>
+        <h1 id="doc-titulo"></h1>
+        <p id="doc-intro"></p>
+        <div id="msg-doc"></div>
+        <div class="aviso-caja doc-texto" id="doc-contenido" tabindex="0"></div>
+        <div id="anexo-b" class="anexo-b" hidden>
+          <h3>Autorizaciones opcionales · anexo B</h3>
+          <p>Actívalas solo si quieres. No activarlas no cambia tu servicio.</p>
+          <div id="anexo-b-lista"></div>
+        </div>
+        <div id="doc-aceptar">
+          <label class="interruptor" for="doc-acepto">
+            <input type="checkbox" id="doc-acepto"><span class="riel"></span>
+            <span class="txt"><b id="doc-acepto-titulo"></b><span id="doc-acepto-texto"></span></span>
+          </label>
+          <div class="acciones" style="border-top:0">
+            <span class="guardado">Se guarda la fecha, la hora y la versión que aceptas.</span>
+            <button class="btn btn-oscuro" type="button" id="btn-doc" disabled>Aceptar y continuar</button>
+          </div>
+        </div>
+        <div id="pago-espera" class="espera" hidden>
+          <div class="espera-ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <div>
+            <b>Recibimos tu aceptación</b>
+            <p>Manda tu comprobante de pago por WhatsApp al <a href="https://wa.me/526674111515" rel="noopener">667 411 1515</a>. Si necesitas factura, envía junto con él tu Constancia de Situación Fiscal. Cuando confirmemos tu pago te avisamos por WhatsApp y aquí se abre tu formulario.</p>
+            <button class="btn btn-linea btn-chico" type="button" id="btn-revisar-pago">Revisar si ya se abrió</button>
+          </div>
         </div>
       </div>
     </section>
@@ -87,9 +106,36 @@
         <h2 style="font-size:24px;margin:8px 0 26px">Tus 3 pasos</h2>
         <div class="paso-g hecho"><span class="bola"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><div><h3>Revisamos tus respuestas</h3><p>Un consultor experto prepara tu Diagnóstico Comercial. Lo tienes en máximo 24 horas hábiles.</p></div></div>
         <div class="paso-g" id="paso-agenda"><span class="bola">2</span><div><h3>Agenda tu sesión de entrega</h3><p>Una videollamada de unos 30 minutos para explicarte tu diagnóstico y el plan a seguir. Elige el día y la hora que te queden mejor.</p><div id="agenda" class="agenda" aria-live="polite"></div></div></div>
-        <div class="paso-g" id="paso-guia"><span class="bola">3</span><div><h3>Descarga tu guía</h3><p>«Cómo sacarle provecho a tu Diagnóstico Comercial», para que llegues con todo a tu sesión.</p><div id="guia-caja" class="guia-caja"></div></div></div>
+        <div class="paso-g" id="paso-guia"><span class="bola">3</span><div><h3>Descarga tu guía y tu contrato</h3><p>«Cómo sacarle provecho a tu Diagnóstico Comercial», para que llegues con todo a tu sesión, y tu contrato en PDF.</p><div id="guia-caja" class="guia-caja"></div></div></div>
         <div id="implementacion" class="implementacion" hidden></div>
         <p style="font-size:14px;color:var(--tinta-2)">¿Dudas o algo que corregir? Escríbenos por WhatsApp al <a href="https://wa.me/526674111515" rel="noopener">667 411 1515</a>.</p>
+      </div>
+    </section>
+
+    <!-- Cierre del servicio -->
+    <section id="pantalla-final" class="gracias vidrio" hidden>
+      <div class="izq">
+        <div class="sello"><div><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div></div>
+        <h1 id="final-titulo">Servicio terminado</h1>
+        <p>Gracias por confiar en AV&amp;CO. Tu Diagnóstico y tus sesiones quedan contigo; lo que sigue es aplicarlo.</p>
+      </div>
+      <div class="der">
+        <span class="etiqueta">Si quieres seguir</span>
+        <h2 style="font-size:24px;margin:8px 0 12px">Más sesiones de implementación</h2>
+        <p class="final-texto" id="final-extras"></p>
+        <a class="btn btn-oscuro btn-chico" id="final-whatsapp" href="https://wa.me/526674111515" rel="noopener" target="_blank">Pedir más sesiones por WhatsApp</a>
+        <div class="opinion" id="opinion">
+          <h3>¿Cómo te fue?</h3>
+          <form id="form-opinion" novalidate>
+            <div class="campo"><span class="etiqueta-campo">Del 1 al 5, ¿cómo calificas el servicio?</span>
+              <div class="opciones estrellas" id="op-satisfaccion"></div></div>
+            <div class="campo"><label class="interruptor" for="op-recomienda"><input type="checkbox" id="op-recomienda"><span class="riel"></span><span class="txt"><b>Nos recomendarías</b><span id="op-recomienda-txt">No</span></span></label></div>
+            <div class="campo"><label for="op-comentario">¿Algo que quieras contarnos? <span class="ayuda">Opcional</span></label><textarea id="op-comentario" maxlength="1800"></textarea></div>
+            <div id="msg-opinion"></div>
+            <button class="btn btn-oscuro btn-chico" type="submit" id="btn-opinion">Enviar opinión</button>
+          </form>
+        </div>
+        <div class="final-descargas" id="final-descargas"></div>
       </div>
     </section>
 
@@ -124,6 +170,9 @@
   </div>
 </div>
 
-<script src="/assets/formulario.js?v=8"></script>
+<!-- Contrato para descargar en PDF (solo se ve al imprimir o guardar como PDF) -->
+<div id="impresion" class="impresion" aria-hidden="true"></div>
+
+<script src="/assets/formulario.js?v=9"></script>
 </body>
 </html>
